@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
-from querycraft.models import User, Order
+from datetime import timedelta, date
+from querycraft.models import Customer, Product, Order
 import random
 
 
@@ -10,10 +10,16 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--users',
+            '--customers',
             type=int,
             default=20,
-            help='Number of sample users',
+            help='Number of sample customers',
+        )
+        parser.add_argument(
+            '--products',
+            type=int,
+            default=15,
+            help='Number of sample products',
         )
         parser.add_argument(
             '--orders',
@@ -23,45 +29,61 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        num_users = options['users']
+        num_customers = options['customers']
+        num_products = options['products']
         num_orders = options['orders']
 
         self.stdout.write('Creating sample data...')
 
         # Delete previous data (optional)
-        User.objects.all().delete()
         Order.objects.all().delete()
+        Customer.objects.all().delete()
+        Product.objects.all().delete()
 
-        # Create users
-        users = []
-        for i in range(num_users):
-            # Create users at different time periods
-            days_ago = random.randint(0, 60)
-            created_at = timezone.now() - timedelta(days=days_ago)
-            
-            user = User.objects.create(
-                username=f'user_{i+1}',
-                email=f'user_{i+1}@example.com',
-                created_at=created_at,
-                is_active=random.choice([True, True, True, False])  # Most are active
+        # Create products first
+        categories = ['Electronics', 'Clothing', 'Books', 'Food', 'Toys', 'Home & Garden']
+        products = []
+        for i in range(num_products):
+            product = Product.objects.create(
+                name=f'Product {i+1}',
+                category=random.choice(categories),
+                price=round(random.uniform(10.0, 500.0), 2)
             )
-            users.append(user)
+            products.append(product)
 
-        self.stdout.write(self.style.SUCCESS(f'✓ {num_users} users created'))
+        self.stdout.write(self.style.SUCCESS(f'✓ {num_products} products created'))
+
+        # Create customers
+        customers = []
+        for i in range(num_customers):
+            # Create customers at different time periods
+            days_ago = random.randint(0, 365)
+            registration_date = date.today() - timedelta(days=days_ago)
+            
+            customer = Customer.objects.create(
+                name=f'Customer {i+1}',
+                email=f'customer{i+1}@example.com',
+                registration_date=registration_date
+            )
+            customers.append(customer)
+
+        self.stdout.write(self.style.SUCCESS(f'✓ {num_customers} customers created'))
 
         # Create orders
+        statuses = ['pending', 'completed', 'completed', 'cancelled']
         for i in range(num_orders):
-            user = random.choice(users)
-            days_ago = random.randint(0, 30)
-            created_at = timezone.now() - timedelta(days=days_ago)
+            customer = random.choice(customers)
+            product = random.choice(products)
+            days_ago = random.randint(0, 90)
+            order_date = date.today() - timedelta(days=days_ago)
             
             Order.objects.create(
-                user=user,
-                total_amount=random.uniform(10.0, 1000.0),
-                created_at=created_at,
-                status=random.choice(['pending', 'completed', 'completed', 'cancelled'])
+                customer=customer,
+                product=product,
+                order_date=order_date,
+                quantity=random.randint(1, 10),
+                status=random.choice(statuses)
             )
 
         self.stdout.write(self.style.SUCCESS(f'✓ {num_orders} orders created'))
         self.stdout.write(self.style.SUCCESS('✓ Sample data created successfully!'))
-

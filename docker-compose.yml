@@ -1,10 +1,7 @@
-version: '3.8'
-
 services:
   web:
     build: .
     container_name: querycraft_web
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -14,12 +11,13 @@ services:
     environment:
       - DEBUG=1
       - SECRET_KEY=django-insecure-query-craft-docker-key-change-in-production
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - DATABASE_URL=postgresql://querycraft:querycraft_password@db:5432/querycraft
+      - OLLAMA_BASE_URL=http://ollama:11434
     env_file:
       - .env
     depends_on:
       - db
+      - ollama
     restart: unless-stopped
 
   db:
@@ -35,8 +33,26 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: querycraft_ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
 volumes:
   postgres_data:
   static_volume:
   media_volume:
+  ollama_data:
 

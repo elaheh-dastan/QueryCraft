@@ -16,21 +16,21 @@ RUN apt-get update && apt-get install -y \
 # Install uv
 RUN pip install --no-cache-dir uv
 
-# Copy dependency files
-COPY pyproject.toml ./
+# Copy dependency files first
+COPY pyproject.toml .
+COPY uv.lock .
 
 # Install Python dependencies
-RUN uv pip install --system -e .
+RUN uv sync --no-dev --frozen
 
 # Copy project
 COPY . .
 
 # Collect static files
-RUN python manage.py collectstatic --noinput || true
+RUN uv run manage.py collectstatic --noinput || true
 
 # Expose port
 EXPOSE 8000
 
 # Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
-
+CMD ["sh", "-c", "uv run manage.py migrate && uv run manage.py runserver 0.0.0.0:8000"]
