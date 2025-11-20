@@ -36,8 +36,12 @@ class Product(models.Model):
 class Order(models.Model):
     """Order model linking customers and products"""
 
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Customer")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Product")
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, verbose_name="Customer"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, verbose_name="Product"
+    )
     order_date = models.DateField(verbose_name="Order Date")
     quantity = models.IntegerField(verbose_name="Quantity")
     status = models.CharField(

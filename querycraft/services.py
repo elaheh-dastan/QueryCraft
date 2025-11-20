@@ -10,6 +10,7 @@ from django.db import connection
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
 from langgraph.graph import END, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 
 # Configure logger for this module
@@ -117,7 +118,9 @@ orders table:
 """
         return schema_info
 
-    def _build_graph(self) -> StateGraph:
+    def _build_graph(
+        self,
+    ) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:
         """Build the LangGraph workflow"""
         workflow = StateGraph[GraphState, None, GraphState, GraphState](GraphState)
 
@@ -157,8 +160,13 @@ orders table:
             logger.debug("Invoking Ollama LLM for SQL generation...")
 
             # Log the formatted prompt for debugging
-            formatted_prompt_text = self.prompt_template.format(schema=schema, question=question)
-            logger.debug("Formatted prompt preview (first 300 chars): %s...", formatted_prompt_text[:300])
+            formatted_prompt_text = self.prompt_template.format(
+                schema=schema, question=question
+            )
+            logger.debug(
+                "Formatted prompt preview (first 300 chars): %s...",
+                formatted_prompt_text[:300],
+            )
 
             # Invoke the chain
             response = chain.invoke(
@@ -180,7 +188,9 @@ orders table:
                 sql_query = str(response).strip()
                 logger.debug("Response converted to string")
 
-            logger.debug("Raw LLM response (length=%d): '%s'", len(sql_query), sql_query)
+            logger.debug(
+                "Raw LLM response (length=%d): '%s'", len(sql_query), sql_query
+            )
 
             # Check if response is empty
             if not sql_query or len(sql_query) == 0:
@@ -200,7 +210,9 @@ orders table:
 
             return {**state, "sql_query": sql_query, "method": "ollama"}
         except Exception as e:
-            logger.error("SQL GENERATION NODE - Failed with error: %s", str(e), exc_info=True)
+            logger.error(
+                "SQL GENERATION NODE - Failed with error: %s", str(e), exc_info=True
+            )
             return {
                 **state,
                 "sql_query": None,
@@ -263,7 +275,11 @@ orders table:
                 sql_upper = sql_query.strip().upper()
 
                 if sql_upper.startswith("SELECT"):
-                    columns = [col[0] for col in cursor.description] if cursor.description else []
+                    columns = (
+                        [col[0] for col in cursor.description]
+                        if cursor.description
+                        else []
+                    )
                     rows = cursor.fetchall()
 
                     # Convert to list of dictionaries
@@ -290,7 +306,9 @@ orders table:
                     "columns": [],
                 }
         except Exception as e:
-            logger.error("SQL EXECUTION NODE - Failed with error: %s", str(e), exc_info=True)
+            logger.error(
+                "SQL EXECUTION NODE - Failed with error: %s", str(e), exc_info=True
+            )
             return {**state, "error": f"SQL execution error: {e!s}"}
 
     def _should_execute(self, state: GraphState) -> Literal["valid", "invalid"]:
@@ -313,7 +331,9 @@ orders table:
                 # Get the content between first pair of ```
                 sql = parts[1]
                 # Remove language identifier if present
-                if sql.strip().lower().startswith(("sql\n", "sql ")) or sql.strip().upper().startswith(("SQL\n", "SQL ")):
+                if sql.strip().lower().startswith(
+                    ("sql\n", "sql ")
+                ) or sql.strip().upper().startswith(("SQL\n", "SQL ")):
                     sql = sql.strip()[3:]
             sql = sql.strip()
             logger.debug("After removing markdown: %s", sql)
@@ -322,12 +342,15 @@ orders table:
         import re
 
         # Strategy 1: Look for SELECT/WITH/etc with regex (case-insensitive, allows leading whitespace)
-        sql_pattern = r'\b(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*?(?:;|$)'
+        sql_pattern = r"\b(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*?(?:;|$)"
         match = re.search(sql_pattern, sql, re.IGNORECASE | re.DOTALL)
 
         if match:
             sql = match.group(0).strip()
-            logger.debug("Extracted SQL using regex pattern: %s", sql[:100] if len(sql) > 100 else sql)
+            logger.debug(
+                "Extracted SQL using regex pattern: %s",
+                sql[:100] if len(sql) > 100 else sql,
+            )
         else:
             # Strategy 2: Line-by-line extraction
             logger.debug("Regex pattern didn't match, trying line-by-line extraction")
@@ -338,7 +361,11 @@ orders table:
             for line in lines:
                 line_stripped = line.strip()
                 # Start collecting when we find SQL keywords
-                if re.match(r'^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)\b', line_stripped, re.IGNORECASE):
+                if re.match(
+                    r"^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)\b",
+                    line_stripped,
+                    re.IGNORECASE,
+                ):
                     in_sql = True
                     logger.debug("Found SQL start at line: %s", line_stripped)
 
@@ -350,7 +377,10 @@ orders table:
 
             if sql_lines:
                 sql = " ".join(sql_lines).strip()
-                logger.debug("After line-by-line extraction: %s", sql[:100] if len(sql) > 100 else sql)
+                logger.debug(
+                    "After line-by-line extraction: %s",
+                    sql[:100] if len(sql) > 100 else sql,
+                )
             else:
                 # Strategy 3: Use original if no patterns found
                 logger.warning("No SQL pattern found, using original cleaned text")
@@ -362,7 +392,9 @@ orders table:
 
         # Final validation: if still empty or too short, return original
         if not sql or len(sql) < 5:
-            logger.error("Cleaning resulted in empty or very short SQL! Using original input")
+            logger.error(
+                "Cleaning resulted in empty or very short SQL! Using original input"
+            )
             result = original_sql.strip()
         else:
             result = sql
@@ -380,7 +412,9 @@ orders table:
 
         # Only allow SELECT queries for safety
         if not sql_upper.startswith("SELECT"):
-            return ValidationResult(is_valid=False, error="Only SELECT queries are allowed")
+            return ValidationResult(
+                is_valid=False, error="Only SELECT queries are allowed"
+            )
 
         # Check for dangerous operations
         dangerous_keywords = [
@@ -458,11 +492,16 @@ orders table:
 
             logger.info("=" * 80)
             logger.info("WORKFLOW COMPLETED - Processing final state")
-            logger.debug("Final state: %s", {k: v for k, v in final_state.items() if k != "results"})
+            logger.debug(
+                "Final state: %s",
+                {k: v for k, v in final_state.items() if k != "results"},
+            )
 
             # Check if we have an error
             if final_state.get("error"):
-                logger.error("Workflow completed with error: %s", final_state.get("error"))
+                logger.error(
+                    "Workflow completed with error: %s", final_state.get("error")
+                )
                 logger.info("Result: FAILURE ✗")
                 logger.info("=" * 80 + "\n")
                 return QueryResult(
@@ -478,7 +517,10 @@ orders table:
 
             # Check if SQL was generated but invalid
             if final_state.get("sql_query") and not final_state.get("is_valid"):
-                logger.warning("SQL generated but validation failed: %s", final_state.get("error", "Unknown validation error"))
+                logger.warning(
+                    "SQL generated but validation failed: %s",
+                    final_state.get("error", "Unknown validation error"),
+                )
                 logger.info("Result: FAILURE ✗")
                 logger.info("=" * 80 + "\n")
                 return QueryResult(

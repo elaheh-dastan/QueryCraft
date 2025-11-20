@@ -42,7 +42,14 @@ class Command(BaseCommand):
         Product.objects.all().delete()
 
         # Create products first
-        categories = ["Electronics", "Clothing", "Books", "Food", "Toys", "Home & Garden"]
+        categories = [
+            "Electronics",
+            "Clothing",
+            "Books",
+            "Food",
+            "Toys",
+            "Home & Garden",
+        ]
         products = []
         for i in range(num_products):
             product = Product.objects.create(
@@ -127,8 +134,12 @@ class Command(BaseCommand):
                 f"  - {num_last_month} registered last month ({first_day_last_month} to {last_day_last_month})"
             )
         )
-        self.stdout.write(self.style.SUCCESS(f"  - {num_this_month} registered this month"))
-        self.stdout.write(self.style.SUCCESS(f"  - {num_older} registered in older periods"))
+        self.stdout.write(
+            self.style.SUCCESS(f"  - {num_this_month} registered this month")
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f"  - {num_older} registered in older periods")
+        )
 
         # Create orders
         statuses = ["pending", "completed", "completed", "cancelled"]
