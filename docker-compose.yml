@@ -1,50 +1,67 @@
-services:
-  web:
-    build: .
-    container_name: querycraft_web
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-    ports:
-      - "8000:8000"
-    environment:
-      - DEBUG=1
-      - SECRET_KEY=django-insecure-query-craft-docker-key-change-in-production
-      - DATABASE_URL=postgresql://querycraft:querycraft_password@db:5432/querycraft
-      - OLLAMA_BASE_URL=http://ollama:11434
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - ollama
-    restart: unless-stopped
+# ============================================
+# QueryCraft Docker Compose Configuration
+# ============================================
+# This compose file supports both development and production environments
+# using Docker Compose profiles.
+#
+# Usage:
+#   Development: docker compose up
+#   Production:  docker compose --profile prod up
+#
+# Environment variables should be set in .env file
+# See .env.example for required variables
+# ============================================
 
+services:
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
   db:
     image: postgres:18-alpine
     container_name: querycraft_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=querycraft
-      - POSTGRES_USER=querycraft
-      - POSTGRES_PASSWORD=querycraft_password
+      POSTGRES_DB: ${POSTGRES_DB:-querycraft}
+      POSTGRES_USER: ${POSTGRES_USER:-querycraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-querycraft_password}
+    # Only expose port in development (not needed in production)
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-querycraft}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # ==========================================
+  # Ollama LLM Service
+  # ==========================================
   ollama:
     build:
       context: .
       dockerfile: Dockerfile.ollama
     container_name: querycraft_ollama
     volumes:
+      # Persistent storage for Ollama data (models, config)
       - ollama_data:/root/.ollama
+      # Mount host models directory (download model once on host)
       - ./models:/app/models
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     environment:
-      - OLLAMA_HOST=0.0.0.0:11434
+      OLLAMA_HOST: 0.0.0.0:11434
     restart: unless-stopped
+    # Resource limits (Ollama requires 4-8GB RAM for sqlcoder-7b-2)
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 4G
+          cpus: '2'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
@@ -52,8 +69,123 @@ services:
       retries: 3
       start_period: 300s
 
+  # ==========================================
+  # Django Web Application (Development)
+  # ==========================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DEV_MODE: "true"
+    container_name: querycraft_web_dev
+    volumes:
+      # Mount source code for hot-reload in development
+      - .:/app
+      # Persistent volumes for static/media files
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      # Django settings
+      DEBUG: ${DEBUG:-1}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-dev-key-change-me}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+
+      # Database connection
+      DATABASE_URL: postgresql://${POSTGRES_USER:-querycraft}:${POSTGRES_PASSWORD:-querycraft_password}@db:5432/${POSTGRES_DB:-querycraft}
+
+      # Ollama connection
+      OLLAMA_BASE_URL: http://ollama:11434
+
+      # Development settings
+      SKIP_COLLECTSTATIC: "true"
+      SEED_DB: ${SEED_DB:-false}
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    # Development profile (default)
+    profiles:
+      - ""
+
+  # ==========================================
+  # Django Web Application (Production)
+  # ==========================================
+  web-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DEV_MODE: "false"
+    container_name: querycraft_web_prod
+    volumes:
+      # Only mount persistent data (no source code)
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "${WEB_PORT:-8000}:8000"
+    environment:
+      # Django settings (must be properly configured via .env)
+      DEBUG: ${DEBUG:-0}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS must be set in .env}
+
+      # Database connection
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+
+      # Ollama connection
+      OLLAMA_BASE_URL: http://ollama:11434
+
+      # Production settings
+      SKIP_COLLECTSTATIC: "false"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    # Production profile
+    profiles:
+      - prod
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+# ==========================================
+# Named Volumes
+# ==========================================
 volumes:
   postgres_data:
+    name: querycraft_postgres_data
   static_volume:
+    name: querycraft_static
   media_volume:
+    name: querycraft_media
   ollama_data:
+    name: querycraft_ollama_data
