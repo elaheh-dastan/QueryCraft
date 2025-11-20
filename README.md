@@ -519,6 +519,7 @@ The application uses three main tables:
 - "What is the total number of orders?"
 - "List all orders for customer with id 5"
 - "Show products with price greater than 100"
+- "تمام مشتریانی که در ۱۰ روز اخیر در سایت ما ثبتنام داشتند." (All customers who registered in the last 10 days - Persian)
 
 ## Development
 

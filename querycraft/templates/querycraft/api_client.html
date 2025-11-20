@@ -1,322 +1,335 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QueryCraft API Client</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 800px;
-            width: 100%;
-            padding: 30px;
-        }
+      .container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        max-width: 800px;
+        width: 100%;
+        padding: 30px;
+      }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+      .form-group {
+        margin-bottom: 20px;
+      }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+        font-size: 14px;
+      }
 
-        textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 100px;
-            transition: border-color 0.3s;
-        }
+      textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 100px;
+        transition: border-color 0.3s;
+      }
 
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+      textarea:focus {
+        outline: none;
+        border-color: #667eea;
+      }
 
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-        }
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        width: 100%;
+      }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
 
-        button:active {
-            transform: translateY(0);
-        }
+      button:active {
+        transform: translateY(0);
+      }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
 
-        .result-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            display: none;
-        }
+      .result-section {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: none;
+      }
 
-        .result-section.show {
-            display: block;
-        }
+      .result-section.show {
+        display: block;
+      }
 
-        .result-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #333;
-        }
+      .result-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #333;
+      }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid #28a745;
-        }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border-left: 4px solid #28a745;
+      }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border-left: 4px solid #dc3545;
-        }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border-left: 4px solid #dc3545;
+      }
 
-        .sql-query {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            margin: 15px 0;
-            overflow-x: auto;
-            font-size: 13px;
-        }
+      .sql-query {
+        background: #2d2d2d;
+        color: #f8f8f2;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: "Courier New", monospace;
+        margin: 15px 0;
+        overflow-x: auto;
+        font-size: 13px;
+      }
 
-        .json-response {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+      .json-response {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 15px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+      }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-        }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #667eea;
+      }
 
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
 
-        .info-box {
-            background: #e7f3ff;
-            border-left: 4px solid #2196F3;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #0c5460;
-        }
+      .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #2196f3;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #0c5460;
+      }
 
-        .info-box strong {
-            display: block;
-            margin-bottom: 5px;
-        }
+      .info-box strong {
+        display: block;
+        margin-bottom: 5px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🔍 QueryCraft API Client</h1>
-        <p class="subtitle">Simple interface to interact with QueryCraft API</p>
+      <h1>🔍 QueryCraft API Client</h1>
+      <p class="subtitle">Simple interface to interact with QueryCraft API</p>
 
-        <div class="info-box">
-            <strong>API Endpoint:</strong>
-            <code>POST /query/api/</code><br>
-            <strong>Request Body:</strong> <code>{"question": "your question here"}</code>
+      <div class="info-box">
+        <strong>API Endpoint:</strong>
+        <code>POST /query/api/</code><br />
+        <strong>Request Body:</strong>
+        <code>{"question": "your question here"}</code>
+      </div>
+
+      <form id="queryForm">
+        <div class="form-group">
+          <label for="question">Enter your question in natural language:</label>
+          <textarea
+            id="question"
+            name="question"
+            placeholder="Example: How many customers registered last month?"
+            required
+          ></textarea>
         </div>
 
-        <form id="queryForm">
-            <div class="form-group">
-                <label for="question">Enter your question in natural language:</label>
-                <textarea 
-                    id="question" 
-                    name="question" 
-                    placeholder="Example: How many customers registered last month?"
-                    required
-                ></textarea>
-            </div>
-            
-            <button type="submit" id="submitBtn">
-                Send Query
-            </button>
-        </form>
+        <button type="submit" id="submitBtn">Send Query</button>
+      </form>
 
-        <div class="result-section" id="resultSection">
-            <div class="result-title">Response:</div>
-            <div id="resultContent"></div>
-        </div>
+      <div class="result-section" id="resultSection">
+        <div class="result-title">Response:</div>
+        <div id="resultContent"></div>
+      </div>
     </div>
 
     <script>
-        const API_URL = '/query/api/';
+      const API_URL = "/query/api/";
 
-        document.getElementById('queryForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const question = document.getElementById('question').value.trim();
-            const submitBtn = document.getElementById('submitBtn');
-            const resultSection = document.getElementById('resultSection');
-            const resultContent = document.getElementById('resultContent');
-            
-            if (!question) {
-                alert('Please enter a question');
-                return;
+      document
+        .getElementById("queryForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const question = document.getElementById("question").value.trim();
+          const submitBtn = document.getElementById("submitBtn");
+          const resultSection = document.getElementById("resultSection");
+          const resultContent = document.getElementById("resultContent");
+
+          if (!question) {
+            alert("Please enter a question");
+            return;
+          }
+
+          // Show loading
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Processing...";
+          resultSection.classList.add("show");
+          resultContent.innerHTML =
+            '<div class="loading"><div class="spinner"></div><p>Processing your query...</p></div>';
+
+          try {
+            const response = await fetch(API_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ question: question }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
-            // Show loading
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Processing...';
-            resultSection.classList.add('show');
-            resultContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>Processing your query...</p></div>';
-            
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question: question })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Display results
-                let html = '';
-                
-                if (data.success) {
-                    html += '<div class="success">✓ Query executed successfully</div>';
-                    
-                    // Show SQL query
-                    if (data.sql_query) {
-                        html += '<div><strong>Generated SQL:</strong></div>';
-                        html += `<div class="sql-query">${escapeHtml(data.sql_query)}</div>`;
-                    }
-                    
-                    // Show results if available
-                    if (data.results && data.results.length > 0) {
-                        html += `<div style="margin-top: 15px;"><strong>Results (${data.row_count} rows):</strong></div>`;
-                        html += `<div class="json-response">${formatJSON(data.results)}</div>`;
-                    } else if (data.row_count === 0) {
-                        html += '<div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 6px; color: #856404;">No results found.</div>';
-                    }
-                } else {
-                    html += `<div class="error">❌ Error: ${escapeHtml(data.error || 'Unknown error')}</div>`;
-                    if (data.sql_query) {
-                        html += '<div style="margin-top: 15px;"><strong>Generated SQL:</strong></div>';
-                        html += `<div class="sql-query">${escapeHtml(data.sql_query)}</div>`;
-                    }
-                }
-                
-                // Show full JSON response
-                html += '<div style="margin-top: 20px;"><strong>Full JSON Response:</strong></div>';
-                html += `<div class="json-response">${formatJSON(data)}</div>`;
-                
-                resultContent.innerHTML = html;
-            } catch (error) {
-                resultContent.innerHTML = `<div class="error">❌ Error: ${escapeHtml(error.message)}</div>`;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Send Query';
+
+            const data = await response.json();
+
+            // Display results
+            let html = "";
+
+            if (data.success) {
+              html +=
+                '<div class="success">✓ Query executed successfully</div>';
+
+              // Show SQL query
+              if (data.sql_query) {
+                html += "<div><strong>Generated SQL:</strong></div>";
+                html += `<div class="sql-query">${escapeHtml(data.sql_query)}</div>`;
+              }
+
+              // Show results if available
+              if (data.results && data.results.length > 0) {
+                html += `<div style="margin-top: 15px;"><strong>Results (${data.row_count} rows):</strong></div>`;
+                html += `<div class="json-response">${formatJSON(data.results)}</div>`;
+              } else if (data.row_count === 0) {
+                html +=
+                  '<div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 6px; color: #856404;">No results found.</div>';
+              }
+            } else {
+              html += `<div class="error">❌ Error: ${escapeHtml(data.error || "Unknown error")}</div>`;
+              if (data.sql_query) {
+                html +=
+                  '<div style="margin-top: 15px;"><strong>Generated SQL:</strong></div>';
+                html += `<div class="sql-query">${escapeHtml(data.sql_query)}</div>`;
+              }
             }
+
+            // Show full JSON response
+            html +=
+              '<div style="margin-top: 20px;"><strong>Full JSON Response:</strong></div>';
+            html += `<div class="json-response">${formatJSON(data)}</div>`;
+
+            resultContent.innerHTML = html;
+          } catch (error) {
+            resultContent.innerHTML = `<div class="error">❌ Error: ${escapeHtml(error.message)}</div>`;
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Send Query";
+          }
         });
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function formatJSON(obj) {
-            return escapeHtml(JSON.stringify(obj, null, 2));
-        }
-    </script>
-</body>
-</html>
 
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function formatJSON(obj) {
+        return escapeHtml(JSON.stringify(obj, null, 2));
+      }
+    </script>
+  </body>
+</html>
