@@ -1,8 +1,9 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from datetime import timedelta, date
-from querycraft.models import Customer, Product, Order
 import random
+from datetime import date, timedelta
+
+from django.core.management.base import BaseCommand
+
+from querycraft.models import Customer, Order, Product
 
 
 class Command(BaseCommand):
@@ -71,7 +72,7 @@ class Command(BaseCommand):
 
         # Create orders
         statuses = ["pending", "completed", "completed", "cancelled"]
-        for i in range(num_orders):
+        for _ in range(num_orders):
             customer = random.choice(customers)
             product = random.choice(products)
             days_ago = random.randint(0, 90)
