@@ -56,19 +56,79 @@ class Command(BaseCommand):
 
         # Create customers
         customers = []
-        for i in range(num_customers):
-            # Create customers at different time periods
-            days_ago = random.randint(0, 365)
-            registration_date = date.today() - timedelta(days=days_ago)
+        today = date.today()
+
+        # Calculate last month date range
+        # Last month means the previous calendar month
+        first_day_current_month = today.replace(day=1)
+        last_day_last_month = first_day_current_month - timedelta(days=1)
+        first_day_last_month = last_day_last_month.replace(day=1)
+
+        # Split customers into different time periods
+        # 30% from last month (to answer the query)
+        # 20% from this month
+        # 50% from older periods
+        num_last_month = int(num_customers * 0.3)
+        num_this_month = int(num_customers * 0.2)
+        num_older = num_customers - num_last_month - num_this_month
+
+        customer_count = 0
+
+        # Create customers from last month
+        for i in range(num_last_month):
+            # Random date within last month
+            days_in_last_month = (last_day_last_month - first_day_last_month).days + 1
+            random_day = random.randint(0, days_in_last_month - 1)
+            registration_date = first_day_last_month + timedelta(days=random_day)
 
             customer = Customer.objects.create(
-                name=f"Customer {i + 1}",
-                email=f"customer{i + 1}@example.com",
+                name=f"Customer {customer_count + 1}",
+                email=f"customer{customer_count + 1}@example.com",
                 registration_date=registration_date,
             )
             customers.append(customer)
+            customer_count += 1
+
+        # Create customers from this month
+        for i in range(num_this_month):
+            # Random date from this month up to today
+            days_in_current_month = (today - first_day_current_month).days
+            if days_in_current_month > 0:
+                random_day = random.randint(0, days_in_current_month)
+                registration_date = first_day_current_month + timedelta(days=random_day)
+            else:
+                registration_date = today
+
+            customer = Customer.objects.create(
+                name=f"Customer {customer_count + 1}",
+                email=f"customer{customer_count + 1}@example.com",
+                registration_date=registration_date,
+            )
+            customers.append(customer)
+            customer_count += 1
+
+        # Create customers from older periods (2-12 months ago)
+        for i in range(num_older):
+            # Random date from 60 to 365 days ago (older than last month)
+            days_ago = random.randint(60, 365)
+            registration_date = today - timedelta(days=days_ago)
+
+            customer = Customer.objects.create(
+                name=f"Customer {customer_count + 1}",
+                email=f"customer{customer_count + 1}@example.com",
+                registration_date=registration_date,
+            )
+            customers.append(customer)
+            customer_count += 1
 
         self.stdout.write(self.style.SUCCESS(f"✓ {num_customers} customers created"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  - {num_last_month} registered last month ({first_day_last_month} to {last_day_last_month})"
+            )
+        )
+        self.stdout.write(self.style.SUCCESS(f"  - {num_this_month} registered this month"))
+        self.stdout.write(self.style.SUCCESS(f"  - {num_older} registered in older periods"))
 
         # Create orders
         statuses = ["pending", "completed", "completed", "cancelled"]
