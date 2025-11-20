@@ -299,7 +299,6 @@ LOGGING = {
 }
 
 # Ensure logs directory exists
-import os
 logs_dir = BASE_DIR / 'logs'
 os.makedirs(logs_dir, exist_ok=True)
 

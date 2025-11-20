@@ -1,157 +1,243 @@
 # QueryCraft 🔍
 
-A Django web application that converts natural language questions to SQL queries using an AI Agent and extracts results from the database.
+A Django web application that converts natural language questions to SQL queries using an AI Agent
+and extracts results from the database.
 
 ## Features
 
 - ✨ Convert natural language questions to SQL using local LLM (Ollama)
-- 🗄️ Support for SQLite and PostgreSQL
-- 🐳 Fully Dockerized with 3 services (web, db, ollama)
+- 🗄️ PostgreSQL database backend
+- 🐳 Fully Dockerized with multiple deployment profiles (dev, staging, production)
 - 🎨 Beautiful and modern UI
 - 🔒 Secure and reliable with SQL validation
-- 🤖 Local LLM inference with sqlcoder-7b-2 model
+- 🤖 Local LLM inference with sqlcoder-7b-2 model (Q4_K_M quantization)
 - 🔄 LangGraph workflow for SQL generation, validation, and execution
+- 🛠️ Task automation with Justfile
 
 ## Architecture
 
-The project consists of 3 main Docker services:
+The project uses Docker Compose with deployment profiles:
 
-1. **web** - Django application
-2. **db** - PostgreSQL database
-3. **ollama** - Local LLM service running `sqlcoder-7b-2:Q4_K_M` model
+**Services:**
+1. **db** - PostgreSQL 18 database
+2. **ollama** - Local LLM service running `sqlcoder-7b-2:local` model
+3. **web** - Django application (staging profile)
+4. **web-prod** - Django application (production profile)
 
-## Setup with Docker (Recommended)
+**Deployment Modes:**
+- **Local Development**: Django runs locally, services in Docker (recommended for development)
+- **Staging**: All services in Docker with `--profile stage`
+- **Production**: All services in Docker with `--profile prod`
+
+## Quick Start (Recommended)
 
 ### Prerequisites
 
-- Docker
-- Docker Compose
+- Docker and Docker Compose
+- Just (optional but recommended): `cargo install just` or `brew install just`
 - At least 8GB RAM (for Ollama model)
+- Python 3.11+ (for local development)
+
+### Option 1: Staging Deployment (Full Docker)
+
+**Using Justfile (Recommended):**
+
+```bash
+# Full staging deployment (build + start + migrate)
+just stage-deploy
+
+# Create sample data
+just stage-exec "python manage.py create_sample_data"
+
+# Access application at http://localhost:8000
+```
+
+**Using Docker Compose directly:**
+
+```bash
+# Start staging environment
+docker compose --profile stage up -d
+
+# Wait for services, then run migrations
+docker compose --profile stage exec web python manage.py migrate
+
+# Create sample data
+docker compose --profile stage exec web python manage.py create_sample_data
+
+# Access application at http://localhost:8000
+```
+
+### Option 2: Local Development (Recommended for Development)
+
+Run Django locally with database and Ollama in Docker for better IDE integration:
+
+**Using Justfile (Recommended):**
+
+```bash
+# One-time setup: start services, migrate, create sample data
+just dev-setup
+
+# Run Django locally
+just runserver
+
+# Access application at http://localhost:8000
+```
+
+**Manual steps:**
+
+```bash
+# Install dependencies
+uv sync
+
+# Start only database and Ollama services
+docker compose up -d db ollama
+
+# Run migrations
+uv run python manage.py migrate
+
+# Create sample data
+uv run python manage.py create_sample_data
+
+# Run development server
+uv run python manage.py runserver
+```
+
+### Model Setup
+
+On first run, the Ollama service will automatically:
+- Download the custom GGUF model file from HuggingFace (~4.5GB)
+- Import the model as `sqlcoder-7b-2:local`
+
+This may take 10-15 minutes depending on your internet connection.
+The model is cached in the `models/` directory and `ollama_data` volume.
+
+Monitor setup progress:
+```bash
+docker compose logs -f ollama
+```
+
+### Creating Sample Data
+
+The `create_sample_data` command creates a small test dataset:
+- 20 customers (30% from last month, 20% from this month, 50% older)
+- 15 products across various categories
+- 50 orders linking customers and products
+
+**Customize the data:**
+```bash
+# Staging
+just stage-exec "python manage.py create_sample_data --customers 50 --products 30 --orders 100"
+
+# Local development
+uv run python manage.py create_sample_data --customers 50 --products 30 --orders 100
+```
+
+## Justfile Commands Reference
+
+The project includes a comprehensive Justfile for task automation. Run `just` or `just --list` to see all commands.
+
+### Common Commands
+
+```bash
+# Local Development
+just dev-setup          # One-time setup: start services, migrate, seed
+just dev-services       # Start only DB and Ollama
+just runserver          # Run Django locally
+just dev-logs           # View service logs
+
+# Staging Deployment
+just stage-deploy       # Full deploy: build + up + migrate
+just stage-up           # Start staging
+just stage-logs         # View logs
+just stage-down         # Stop staging
+
+# Production Deployment
+just prod-validate      # Validate .env for production
+just prod-deploy        # Full deploy with validation
+just prod-up            # Start production
+just prod-down          # Stop production
+
+# Database Management
+just db-backup          # Backup database
+just db-restore         # Restore database
+just db-shell           # PostgreSQL CLI
+
+# Code Quality
+just lint               # Run ruff and mypy
+just sync               # Sync dependencies
+```
+
+### Docker Compose Commands (Alternative)
+
+If you prefer not to use Just, you can use Docker Compose directly:
+
+```bash
+# Staging
+docker compose --profile stage up -d
+docker compose --profile stage logs -f
+docker compose --profile stage exec web python manage.py migrate
+docker compose --profile stage exec web python manage.py createsuperuser
+docker compose --profile stage down
+
+# Production
+docker compose --profile prod up -d
+docker compose --profile prod logs -f
+docker compose --profile prod exec web-prod python manage.py migrate
+docker compose --profile prod down
+
+# Services only (for local development)
+docker compose up -d db ollama
+docker compose logs -f ollama
+docker compose down
+
+# Check Ollama model
+docker compose exec ollama ollama list
+docker compose exec ollama ollama show sqlcoder-7b-2:local
+```
+
+## Production Deployment
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Domain name (for production)
+- Valid SSL certificate (recommended)
+- At least 8GB RAM
 
 ### Setup Steps
 
-1. **Clone or download the project**
-
-2. **Create `.env` file (optional)**
-
+1. **Create production environment file**
    ```bash
-   cp .env.example .env
+   cp .env.prod.example .env
    ```
 
-   Edit the `.env` file if needed (most settings have defaults)
+2. **Configure production settings in `.env`**
+   - Set a strong `SECRET_KEY` (generate with: `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`)
+   - Set `DEBUG=0`
+   - Configure `ALLOWED_HOSTS` with your domain(s)
+   - Set a strong `POSTGRES_PASSWORD`
 
-3. **Run with Docker Compose**
-
+3. **Validate and deploy**
    ```bash
-   docker-compose up --build
+   # Validate configuration
+   just prod-validate
+
+   # Full production deployment
+   just prod-deploy
    ```
 
-   **Note:** On first run, the Ollama service will automatically:
-
-   - Download the custom GGUF model file from HuggingFace (~4.5GB)
-   - Create a Modelfile for the model
-   - Import the model into Ollama
-
-   This process may take 10-15 minutes depending on your internet connection. The model will be cached in the `models/` directory and `ollama_data` volume for subsequent runs.
-
-4. **Wait for model setup to complete**
-
-   Monitor the Ollama service logs to see when the model is ready:
-
+4. **Create superuser**
    ```bash
-   docker-compose logs -f ollama
+   just prod-exec "python manage.py createsuperuser"
    ```
 
-   You'll see messages like:
-
-   - "Downloading model from..."
-   - "Model downloaded successfully!"
-   - "Model sqlcoder-7b-2:Q4_K_M imported successfully!"
-   - "Setup complete! Model sqlcoder-7b-2:Q4_K_M is ready to use."
-
-5. **Access the application**
-
-   - Open your browser and navigate to:
-
-   ```
-   http://localhost:8000
-   ```
-
-6. **Create Django superuser (for Admin access)**
-
-   ```bash
-   docker-compose exec web python manage.py createsuperuser
-   ```
-
-7. **Seed the database with realistic data (recommended)**
-
-   ```bash
-   docker-compose exec web python manage.py seed_db
-   ```
-
-   This command uses Faker to create at least 1000 rows of realistic data:
-
-   - 300 customers
-   - 100 products
-   - 1000 orders
-
-   All referential integrity is maintained (orders reference valid customers and products).
-
-   **Options:**
-
-   ```bash
-   # Customize the number of records
-   docker-compose exec web python manage.py seed_db --customers 500 --products 200 --orders 2000
-
-   # Clear existing data before seeding
-   docker-compose exec web python manage.py seed_db --clear
-   ```
-
-8. **Create sample data (alternative - smaller dataset)**
-   ```bash
-   docker-compose exec web python manage.py create_sample_data
-   ```
-   This command creates 20 sample customers, 15 products, and 50 orders (for quick testing).
-
-### Useful Docker Commands
-
-```bash
-# View logs
-docker-compose logs -f
-
-# View logs for specific service
-docker-compose logs -f ollama
-docker-compose logs -f web
-
-# Stop services
-docker-compose down
-
-# Stop and remove volumes (WARNING: deletes database and models)
-docker-compose down -v
-
-# Run Django commands
-docker-compose exec web python manage.py migrate
-docker-compose exec web python manage.py createsuperuser
-docker-compose exec web python manage.py seed_db
-docker-compose exec web python manage.py shell
-
-# Check if Ollama model is loaded
-docker-compose exec ollama ollama list
-
-# Check model status
-docker-compose exec ollama ollama show sqlcoder-7b-2:Q4_K_M
-
-# View Ollama logs (useful for debugging model setup)
-docker-compose logs ollama
-```
-
-## Setup without Docker (Local Development)
+## Local Development (Without Docker)
 
 ### Prerequisites
 
-- Python 3.8+
-- uv (install with pipx)
-- PostgreSQL (optional, SQLite works too)
+- Python 3.11+
+- uv (install with pipx: `pipx install uv`)
+- PostgreSQL 18+ (must be running)
 - Ollama installed locally
 
 ### Setup Steps
@@ -178,25 +264,19 @@ docker-compose logs ollama
    curl -L -o models/sqlcoder-7b-2.Q4_K_M.gguf \
      https://huggingface.co/MaziyarPanahi/sqlcoder-7b-2-GGUF/resolve/main/sqlcoder-7b-2.Q4_K_M.gguf
 
-   # Create Modelfile
-   cat > Modelfile <<EOF
-   FROM models/sqlcoder-7b-2.Q4_K_M.gguf
-
-   PARAMETER temperature 0.3
-   PARAMETER top_p 0.9
-   PARAMETER top_k 40
-
-   SYSTEM """You are a SQL expert who converts natural language questions to precise SQL queries. Always return only the SQL query without additional explanations."""
-   EOF
-
-   # Import model into Ollama
-   ollama create sqlcoder-7b-2:Q4_K_M -f Modelfile
+   # Create model using the provided Modelfile
+   ollama create sqlcoder-7b-2:local -f Modelfile
    ```
 
-4. **Set environment variables**
+4. **Configure database connection**
 
    ```bash
-   export OLLAMA_BASE_URL=http://localhost:11434
+   # Set PostgreSQL connection (optional, auto-detected if running locally)
+   export POSTGRES_HOST=localhost
+   export POSTGRES_PORT=5432
+   export POSTGRES_USER=querycraft
+   export POSTGRES_PASSWORD=querycraft_password
+   export POSTGRES_DB=querycraft
    ```
 
 5. **Run migrations**
@@ -205,48 +285,33 @@ docker-compose logs ollama
    uv run python manage.py migrate
    ```
 
-6. **Create superuser (optional)**
-
-   ```bash
-   uv run python manage.py createsuperuser
-   ```
-
-7. **Run development server**
-
-   ```bash
-   uv run python manage.py runserver
-   ```
-
-8. **Seed the database with realistic data (recommended)**
-
-   ```bash
-   uv run python manage.py seed_db
-   ```
-
-   This command uses Faker to create at least 1000 rows of realistic data.
-
-   **Options:**
-
-   ```bash
-   # Customize the number of records
-   uv run python manage.py seed_db --customers 500 --products 200 --orders 2000
-
-   # Clear existing data before seeding
-   uv run python manage.py seed_db --clear
-   ```
-
-9. **Create sample data (alternative - smaller dataset)**
+6. **Create sample data**
 
    ```bash
    uv run python manage.py create_sample_data
    ```
 
-   This creates 20 sample customers, 15 products, and 50 orders (for quick testing).
+   Customize if needed:
+   ```bash
+   uv run python manage.py create_sample_data --customers 50 --products 30 --orders 100
+   ```
 
-10. **Access the application**
-    ```
-    http://127.0.0.1:8000
-    ```
+7. **Create superuser (optional)**
+
+   ```bash
+   uv run python manage.py createsuperuser
+   ```
+
+8. **Run development server**
+
+   ```bash
+   uv run python manage.py runserver
+   ```
+
+9. **Access the application**
+   ```
+   http://127.0.0.1:8000
+   ```
 
 ## Using the Application
 
@@ -340,61 +405,83 @@ print(data)
 
 ```
 QueryCraft/
-├── querycraft_project/     # Main Django project settings
-│   ├── settings.py
+├── querycraft_project/         # Main Django project settings
+│   ├── settings.py             # Auto-configured for dev/Docker
 │   ├── urls.py
 │   ├── wsgi.py
 │   └── asgi.py
-├── querycraft/             # Main application
-│   ├── models.py          # Database models (Customer, Product, Order)
-│   ├── views.py           # Application views
-│   ├── services.py        # AI Agent service (LangGraph + Ollama)
-│   ├── urls.py            # URL routing
-│   ├── admin.py           # Admin settings
-│   └── templates/         # HTML templates
-│       ├── query_form.html
-│       └── api_client.html
-├── models/                 # GGUF model storage (created on first run)
-├── docker-compose.yml     # Docker Compose configuration (3 services)
-├── Dockerfile             # Docker image for web service
-├── Modelfile              # Ollama model configuration
-├── init_ollama.sh         # Script to download and setup custom model
-├── pyproject.toml         # Project dependencies
-└── manage.py              # Django management script
+├── querycraft/                 # Main application
+│   ├── models.py               # Database models (Customer, Product, Order)
+│   ├── views.py                # Application views
+│   ├── services.py             # AI Agent service (LangGraph + Ollama)
+│   ├── urls.py                 # URL routing
+│   ├── admin.py                # Admin configuration
+│   ├── templates/              # HTML templates
+│   │   ├── query_form.html
+│   │   └── api_client.html
+│   └── management/commands/    # Custom Django commands
+│       └── create_sample_data.py
+├── models/                     # GGUF model storage (created on first run)
+├── docker-compose.yml          # Docker Compose with profiles (stage/prod)
+├── Dockerfile                  # Multi-stage build for web service
+├── Dockerfile.ollama           # Ollama service with model setup
+├── entrypoint.sh               # Web service entrypoint
+├── entrypoint.ollama.sh        # Ollama service entrypoint
+├── Modelfile                   # Ollama model configuration
+├── init_ollama.sh              # Script to setup custom model
+├── justfile                    # Task automation (recommended)
+├── pyproject.toml              # Python dependencies (Django 5.2+, Python 3.11+)
+├── .env.example                # Environment variables template
+├── .env.prod.example           # Production environment template
+└── manage.py                   # Django management script
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-- `DEBUG`: Debug mode (default: 1)
-- `SECRET_KEY`: Django secret key
-- `DATABASE_URL`: Database URL (for PostgreSQL)
-- `OLLAMA_BASE_URL`: Ollama service URL (default: http://ollama:11434)
-- `ALLOWED_HOSTS`: Allowed hosts
+Key environment variables (see `.env.example` for full list):
+
+- `DEBUG`: Debug mode (default: 1 for dev, must be 0 for production)
+- `SECRET_KEY`: Django secret key (must be set for production)
+- `ALLOWED_HOSTS`: Comma-separated list of allowed hosts
+- `POSTGRES_DB`: Database name (default: querycraft)
+- `POSTGRES_USER`: Database user (default: querycraft)
+- `POSTGRES_PASSWORD`: Database password (default: querycraft_password, change for production)
+- `POSTGRES_HOST`: Database host (auto-detected: 'localhost' or 'db')
+- `OLLAMA_BASE_URL`: Ollama service URL (auto-detected: 'http://localhost:11434' or 'http://ollama:11434')
+- `OLLAMA_MODEL_NAME`: Model name (default: sqlcoder-7b-2:local)
+
+**Auto-detection:**
+- Settings automatically detect if running in Docker or locally
+- Database and Ollama URLs are configured appropriately
+- No `.env` file needed for basic local development
 
 ### Database
 
-The project uses PostgreSQL in Docker. SQLite is also supported for local development.
+The project uses **PostgreSQL 18** exclusively:
+- In Docker: PostgreSQL runs in a container
+- Local development: Connect to PostgreSQL in Docker or a local instance
+- **SQLite is not supported** (PostgreSQL-specific features are used)
 
 ### Ollama Model
 
-The application uses a custom `sqlcoder-7b-2:Q4_K_M` GGUF model which is:
+The application uses `sqlcoder-7b-2:local` (Q4_K_M quantization):
 
-- **Source**: Downloaded from HuggingFace (MaziyarPanahi/sqlcoder-7b-2-GGUF)
-- **Format**: GGUF (not in Ollama repository)
+- **Source**: HuggingFace (MaziyarPanahi/sqlcoder-7b-2-GGUF)
+- **File**: sqlcoder-7b-2.Q4_K_M.gguf
+- **Format**: GGUF quantized model
 - **Optimized for**: SQL generation from natural language
-- **Quantization**: Q4_K_M for efficient inference
-- **Size**: ~4.5GB
-- **Setup**: Automatically downloaded and configured on first Docker run
-- **Location**: Stored in `models/` directory and Ollama volume
-- **Runs entirely locally**: No API keys needed
+- **Quantization**: Q4_K_M for efficient inference (~4.5GB)
+- **Setup**: Automatically downloaded and imported on first run
+- **Storage**: `models/` directory + Docker volume `ollama_data`
+- **Privacy**: Runs entirely locally, no API keys needed
 
-The model is automatically set up via the `init_ollama.sh` script which:
-
-1. Downloads the GGUF file from HuggingFace
-2. Creates a Modelfile with optimized parameters
-3. Imports the model into Ollama
+**Model Setup Process:**
+1. `entrypoint.ollama.sh` starts Ollama service
+2. `init_ollama.sh` checks if model exists
+3. If needed, imports model from GGUF file using Modelfile
+4. Model is registered as `sqlcoder-7b-2:local` in Ollama
 
 ## AI Agent & LangGraph Workflow
 
@@ -435,15 +522,33 @@ The application uses three main tables:
 
 ## Development
 
-For development, you can:
+### Local Development Workflow
+
+**Recommended approach using Justfile:**
+
+```bash
+# Start services (DB + Ollama)
+just dev-services
+
+# Run Django locally with hot-reload
+just runserver
+
+# Run linting and type checking
+just lint
+
+# Create migrations
+just makemigrations
+
+# Apply migrations
+just migrate
+```
+
+**Project customization:**
 
 1. Add new models in `querycraft/models.py`
 2. Modify SQL generation prompts in `querycraft/services.py`
-3. Customize the UI in `querycraft/templates/querycraft/query_form.html`
-4. Seed the database with realistic test data:
-   ```bash
-   python manage.py seed_db --customers 500 --products 200 --orders 2000
-   ```
+3. Customize the UI in `querycraft/templates/querycraft/`
+4. Add management commands in `querycraft/management/commands/`
 
 ### Code Quality Tools
 
@@ -452,121 +557,166 @@ The project uses **ruff** and **mypy** for code quality and type checking.
 **Install development dependencies:**
 
 ```bash
-uv sync --dev
+uv sync
 ```
 
-**Run ruff (linting and formatting):**
+**Run linting and type checking:**
 
 ```bash
-# Check for issues
-uv run ruff check .
+# Using Justfile (recommended)
+just lint
 
-# Auto-fix issues
+# Or manually
 uv run ruff check --fix .
-
-# Format code
 uv run ruff format .
-```
-
-**Run mypy (type checking):**
-
-```bash
 uv run mypy .
 ```
 
-**Run both:**
+**Configuration:**
+- Ruff: Configured in `pyproject.toml` (line length: 100, Python 3.11+)
+- Mypy: Configured in `pyproject.toml` with django-stubs plugin
 
-```bash
-uv run ruff check . && uv run ruff format . && uv run mypy .
-```
+### Sample Data Management
 
-### Database Seeding
+The `create_sample_data` management command creates test data:
 
-The `seed_db` management command uses the Faker library to generate realistic test data:
-
-- **Maintains Referential Integrity**: All foreign keys (customer_id, product_id) reference valid records
-- **Realistic Data**: Uses Faker for names, emails, dates, and product names
-- **Bulk Operations**: Uses bulk_create for efficient database operations
-- **Configurable**: Customize the number of records per table via command-line arguments
-- **Minimum 1000 Rows**: Automatically ensures at least 1000 total rows across all tables
+- **Maintains Referential Integrity**: All foreign keys reference valid records
+- **Time-distributed Data**: Customers distributed across time periods (last month, this month, older)
+- **Configurable**: Customize the number of records via command-line arguments
 
 **Usage:**
 
 ```bash
-# Default: 300 customers, 100 products, 1000 orders (1400 total rows)
-python manage.py seed_db
+# Default: 20 customers, 15 products, 50 orders
+python manage.py create_sample_data
 
 # Custom amounts
-python manage.py seed_db --customers 500 --products 200 --orders 2000
-
-# Clear existing data first
-python manage.py seed_db --clear
+python manage.py create_sample_data --customers 50 --products 30 --orders 100
 ```
+
+**Note:** The command clears existing data before creating new records.
 
 ## Troubleshooting
 
-### Ollama model not loading
+### Ollama Model Issues
 
-If queries fail, check if the model is loaded:
-
-```bash
-docker-compose exec ollama ollama list
-```
-
-If the model is not listed, check the Ollama logs:
+**Check if model is loaded:**
 
 ```bash
-docker-compose logs ollama
+# Using Justfile
+just ollama-list
+
+# Or directly
+docker compose exec ollama ollama list
 ```
 
-The model should be automatically set up on first run. If it failed:
+You should see `sqlcoder-7b-2:local` in the list.
 
-1. Check if the model file was downloaded: `ls -lh models/sqlcoder-7b-2.Q4_K_M.gguf`
-2. Manually run the setup script:
+**If model is missing:**
+
+1. Check Ollama logs:
    ```bash
-   docker-compose exec ollama /init_ollama.sh
-   ```
-3. Or manually import the model:
-   ```bash
-   docker-compose exec ollama ollama create sqlcoder-7b-2:Q4_K_M -f /tmp/Modelfile
+   docker compose logs -f ollama
    ```
 
-### Ollama service not responding
+2. Manually run setup script:
+   ```bash
+   docker compose exec ollama /app/init_ollama.sh
+   ```
 
-Check Ollama logs:
+3. Verify model file exists:
+   ```bash
+   ls -lh models/sqlcoder-7b-2.Q4_K_M.gguf
+   ```
+
+4. Manually import model:
+   ```bash
+   just ollama-create
+   # Or: docker compose exec ollama ollama create sqlcoder-7b-2:local -f /app/Modelfile
+   ```
+
+### Service Issues
+
+**Ollama not responding:**
 
 ```bash
-docker-compose logs ollama
+# Check service status
+just health-check
+
+# Restart Ollama
+docker compose restart ollama
+
+# View logs
+docker compose logs -f ollama
 ```
 
-Restart the Ollama service:
+**Database connection issues:**
 
 ```bash
-docker-compose restart ollama
+# Check database is ready
+docker compose exec db pg_isready -U querycraft
+
+# Access database shell
+just db-shell
+
+# Restart database
+docker compose restart db
 ```
 
-### Out of memory errors
+**Web service issues:**
 
-The sqlcoder-7b-2:Q4_K_M model requires approximately 4-6GB RAM. If you encounter memory issues:
+```bash
+# Staging
+docker compose --profile stage logs -f web
+docker compose --profile stage restart web
 
-- Ensure Docker has enough memory allocated (recommended: 8GB+)
-- Consider using a smaller model variant or lower quantization
+# Production
+docker compose --profile prod logs -f web-prod
+docker compose --profile prod restart web-prod
+```
+
+### Performance Issues
+
+**Out of memory errors:**
+
+The sqlcoder model requires ~4-6GB RAM:
+
+- Ensure Docker has 8GB+ memory allocated
+- Check: Docker Desktop → Settings → Resources
 - Close other memory-intensive applications
-- Check Docker memory settings: Docker Desktop → Settings → Resources
+- Monitor usage: `docker stats`
 
-### Model download issues
+**Model download timeout:**
 
-If the model download fails:
+If download fails or times out:
 
-- Check your internet connection
-- The download may timeout on slow connections - try again
-- You can manually download the model:
-  ```bash
-  mkdir -p models
-  curl -L -o models/sqlcoder-7b-2.Q4_K_M.gguf \
-    https://huggingface.co/MaziyarPanahi/sqlcoder-7b-2-GGUF/resolve/main/sqlcoder-7b-2.Q4_K_M.gguf
-  ```
-- Then restart the Ollama service: `docker-compose restart ollama`
+1. Check internet connection
+2. Manually download model:
+   ```bash
+   cd models
+   curl -L -O https://huggingface.co/MaziyarPanahi/sqlcoder-7b-2-GGUF/resolve/main/sqlcoder-7b-2.Q4_K_M.gguf
+   ```
+3. Restart Ollama: `docker compose restart ollama`
+
+### Docker Compose Profile Issues
+
+**"service web is not running" error:**
+
+The `web` service requires the `stage` profile:
+
+```bash
+# Wrong
+docker compose up
+
+# Correct
+docker compose --profile stage up
+# Or: just stage-up
+```
+
+**Profile reference:**
+- No profile: Only `db` and `ollama` start
+- `--profile stage`: Starts `web` (staging)
+- `--profile prod`: Starts `web-prod` (production)
 
 ## License
 
@@ -574,16 +724,4 @@ This project is free for educational and commercial use.
 
 ## Support
 
-For issues and questions, please create an Issue.
-
-User Question
-|
-v
-[Node 1] SQL Generator (Ollama)
-|
-v
-[Node 2] SQL Validator
-|
-|--- [valid?] ---> [Node 3] Execute SQL ---> return result
-|
-L--- [invalid?] -> return error message
+For issues and questions, please create an issue on the repository.

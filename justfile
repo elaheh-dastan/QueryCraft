@@ -36,9 +36,9 @@ migrate:
 createsuperuser:
     uv run python manage.py createsuperuser
 
-# Seed database with sample data
+# Create sample data for testing
 seed:
-    uv run python manage.py seed_db
+    uv run python manage.py create_sample_data
 
 # Open Django shell
 shell:
@@ -90,8 +90,8 @@ dev-setup:
     sleep 10
     @echo "Running migrations..."
     uv run python manage.py migrate
-    @echo "Seeding database..."
-    uv run python manage.py seed_db
+    @echo "Creating sample data..."
+    uv run python manage.py create_sample_data
     @echo ""
     @echo "Development setup complete!"
     @echo "Run 'just runserver' to start Django development server"

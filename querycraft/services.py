@@ -7,8 +7,8 @@ from typing import Any, Literal, TypedDict
 
 from django.conf import settings
 from django.db import connection
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_ollama import ChatOllama, OllamaLLM
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import OllamaLLM
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
@@ -313,9 +313,7 @@ orders table:
                 # Get the content between first pair of ```
                 sql = parts[1]
                 # Remove language identifier if present
-                if sql.strip().lower().startswith(("sql\n", "sql ")):
-                    sql = sql.strip()[3:]
-                elif sql.strip().upper().startswith(("SQL\n", "SQL ")):
+                if sql.strip().lower().startswith(("sql\n", "sql ")) or sql.strip().upper().startswith(("SQL\n", "SQL ")):
                     sql = sql.strip()[3:]
             sql = sql.strip()
             logger.debug("After removing markdown: %s", sql)
