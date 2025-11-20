@@ -6,6 +6,8 @@ from pathlib import Path
 import os
 from django.core.exceptions import ImproperlyConfigured
 
+from urllib.parse import urlparse
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -41,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'querycraft',  # QueryCraft app
+    'querycraft',
 ]
 
 MIDDLEWARE = [
@@ -83,9 +85,6 @@ DATABASE_URL = get_env_variable('DATABASE_URL', None)
 
 if DATABASE_URL and ('postgresql' in DATABASE_URL or 'postgres' in DATABASE_URL):
     # Parse PostgreSQL URL: postgresql://user:password@host:port/dbname
-    import re
-    from urllib.parse import urlparse
-    
     try:
         parsed = urlparse(DATABASE_URL)
         DATABASES = {
@@ -159,4 +158,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Ollama Configuration
+OLLAMA_BASE_URL = get_env_variable('OLLAMA_BASE_URL', 'http://ollama:11434')
+OLLAMA_MODEL_NAME = get_env_variable('OLLAMA_MODEL_NAME', 'sqlcoder-7b-2:local')
 

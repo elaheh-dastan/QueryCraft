@@ -3,7 +3,6 @@ services:
     build: .
     container_name: querycraft_web
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
@@ -21,7 +20,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: querycraft_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -34,25 +33,27 @@ services:
     restart: unless-stopped
 
   ollama:
-    image: ollama/ollama:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
     container_name: querycraft_ollama
     volumes:
       - ollama_data:/root/.ollama
+      - ./models:/app/models
     ports:
       - "11434:11434"
     environment:
-      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_HOST=0.0.0.0:11434
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 120s
+      start_period: 300s
 
 volumes:
   postgres_data:
   static_volume:
   media_volume:
   ollama_data:
-

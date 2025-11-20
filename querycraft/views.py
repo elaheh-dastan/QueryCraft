@@ -11,10 +11,15 @@ def query_form(request):
     return render(request, 'querycraft/query_form.html')
 
 
+def api_client(request):
+    """Simple API client page"""
+    return render(request, 'querycraft/api_client.html')
+
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def process_query(request):
-    """Process question and return result"""
+    """Process question through LangGraph workflow and return result"""
     try:
         data = json.loads(request.body)
         question = data.get('question', '').strip()
@@ -25,38 +30,12 @@ def process_query(request):
                 'error': 'Please enter a question'
             })
         
-        # Use AI Agent to convert to SQL
+        # Use LangGraph workflow to process question
         agent = SQLAgent()
-        sql_result = agent.generate_sql(question)
+        result = agent.process_question(question)
         
-        if sql_result.get('error'):
-            return JsonResponse({
-                'success': False,
-                'error': f"Error generating SQL: {sql_result['error']}",
-                'question': question
-            })
-        
-        sql_query = sql_result.get('sql')
-        if not sql_query:
-            return JsonResponse({
-                'success': False,
-                'error': 'Could not generate appropriate SQL',
-                'question': question
-            })
-        
-        # Execute query
-        execution_result = agent.execute_query(sql_query)
-        
-        return JsonResponse({
-            'success': execution_result.get('success', False),
-            'question': question,
-            'sql_query': sql_query,
-            'method': sql_result.get('method', 'unknown'),
-            'results': execution_result.get('results', []),
-            'row_count': execution_result.get('row_count', 0),
-            'columns': execution_result.get('columns', []),
-            'error': execution_result.get('error'),
-        })
+        # Pydantic models have built-in JSON serialization
+        return JsonResponse(result.model_dump())
     
     except json.JSONDecodeError:
         return JsonResponse({

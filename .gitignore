@@ -31,6 +31,10 @@ db.sqlite3-journal
 /static/
 /media/
 
+# Models (large GGUF files)
+models/*.gguf
+models/
+
 # IDE
 .vscode/
 .idea/
@@ -41,4 +45,9 @@ db.sqlite3-journal
 # OS
 .DS_Store
 Thumbs.db
+
+# Linting and type checking
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
 
