@@ -42,8 +42,8 @@ Environment Auto-Detection:
   - Ollama URL: 'http://ollama:11434' (Docker) or 'http://localhost:11434' (local)
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -238,6 +238,72 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ============================================
+# Logging Configuration
+# ============================================
+# Comprehensive logging for query processing and debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} {module}.{funcName}:{lineno} - {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'simple': {
+            'format': '[{levelname}] {asctime} - {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'querycraft.log',
+            'formatter': 'verbose',
+        },
+        'query_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'queries.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'querycraft': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'querycraft.services': {
+            'handlers': ['console', 'query_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+}
+
+# Ensure logs directory exists
+import os
+logs_dir = BASE_DIR / 'logs'
+os.makedirs(logs_dir, exist_ok=True)
+
+# ============================================
 # Ollama Configuration
 # ============================================
 # Default: http://localhost:11434 (local Ollama installation)
@@ -265,10 +331,9 @@ def _get_default_ollama_url():
     if in_docker:
         # Running in Docker container - use internal service name
         return 'http://ollama:11434'
-    else:
-        # Running locally - use localhost
-        # Works for both: local Ollama installation OR Docker Ollama with exposed port
-        return 'http://localhost:11434'
+    # Running locally - use localhost
+    # Works for both: local Ollama installation OR Docker Ollama with exposed port
+    return 'http://localhost:11434'
 
 # Ollama base URL (auto-detected or from environment)
 OLLAMA_BASE_URL = get_env('OLLAMA_BASE_URL', _get_default_ollama_url())
