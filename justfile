@@ -1,5 +1,5 @@
 @default:
-    @just list
+    @just --list
 
 # Sync dependencies from pyproject.toml
 sync:
