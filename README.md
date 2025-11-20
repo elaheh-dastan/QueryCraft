@@ -18,7 +18,7 @@ The project consists of 3 main Docker services:
 
 1. **web** - Django application
 2. **db** - PostgreSQL database
-3. **ollama** - Local LLM service running sqlcoder-7b-2:Q4_K_M model
+3. **ollama** - Local LLM service running `sqlcoder-7b-2:Q4_K_M` model
 
 ## Setup with Docker (Recommended)
 
@@ -33,64 +33,76 @@ The project consists of 3 main Docker services:
 1. **Clone or download the project**
 
 2. **Create `.env` file (optional)**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit the `.env` file if needed (most settings have defaults)
 
 3. **Run with Docker Compose**
+
    ```bash
    docker-compose up --build
    ```
-   
+
    **Note:** On first run, the Ollama service will automatically:
+
    - Download the custom GGUF model file from HuggingFace (~4.5GB)
    - Create a Modelfile for the model
    - Import the model into Ollama
-   
+
    This process may take 10-15 minutes depending on your internet connection. The model will be cached in the `models/` directory and `ollama_data` volume for subsequent runs.
 
 4. **Wait for model setup to complete**
-   
+
    Monitor the Ollama service logs to see when the model is ready:
+
    ```bash
    docker-compose logs -f ollama
    ```
-   
+
    You'll see messages like:
+
    - "Downloading model from..."
    - "Model downloaded successfully!"
    - "Model sqlcoder-7b-2:Q4_K_M imported successfully!"
    - "Setup complete! Model sqlcoder-7b-2:Q4_K_M is ready to use."
 
 5. **Access the application**
+
    - Open your browser and navigate to:
+
    ```
    http://localhost:8000
    ```
 
 6. **Create Django superuser (for Admin access)**
+
    ```bash
    docker-compose exec web python manage.py createsuperuser
    ```
 
 7. **Seed the database with realistic data (recommended)**
+
    ```bash
    docker-compose exec web python manage.py seed_db
    ```
+
    This command uses Faker to create at least 1000 rows of realistic data:
+
    - 300 customers
    - 100 products
    - 1000 orders
-   
+
    All referential integrity is maintained (orders reference valid customers and products).
-   
+
    **Options:**
+
    ```bash
    # Customize the number of records
    docker-compose exec web python manage.py seed_db --customers 500 --products 200 --orders 2000
-   
+
    # Clear existing data before seeding
    docker-compose exec web python manage.py seed_db --clear
    ```
@@ -145,84 +157,96 @@ docker-compose logs ollama
 ### Setup Steps
 
 1. **Install `uv`**
+
    ```bash
    pipx install uv
    ```
 
 2. **Install dependencies**
+
    ```bash
    uv pip install -e .
    ```
 
 3. **Install and setup Ollama locally**
+
    ```bash
    # Install Ollama (see https://ollama.ai)
-   
+
    # Download the custom GGUF model
    mkdir -p models
    curl -L -o models/sqlcoder-7b-2.Q4_K_M.gguf \
      https://huggingface.co/MaziyarPanahi/sqlcoder-7b-2-GGUF/resolve/main/sqlcoder-7b-2.Q4_K_M.gguf
-   
+
    # Create Modelfile
    cat > Modelfile <<EOF
    FROM models/sqlcoder-7b-2.Q4_K_M.gguf
-   
+
    PARAMETER temperature 0.3
    PARAMETER top_p 0.9
    PARAMETER top_k 40
-   
+
    SYSTEM """You are a SQL expert who converts natural language questions to precise SQL queries. Always return only the SQL query without additional explanations."""
    EOF
-   
+
    # Import model into Ollama
    ollama create sqlcoder-7b-2:Q4_K_M -f Modelfile
    ```
 
 4. **Set environment variables**
+
    ```bash
    export OLLAMA_BASE_URL=http://localhost:11434
    ```
 
 5. **Run migrations**
+
    ```bash
    uv run python manage.py migrate
    ```
 
 6. **Create superuser (optional)**
+
    ```bash
    uv run python manage.py createsuperuser
    ```
 
 7. **Run development server**
+
    ```bash
    uv run python manage.py runserver
    ```
 
 8. **Seed the database with realistic data (recommended)**
+
    ```bash
    uv run python manage.py seed_db
    ```
+
    This command uses Faker to create at least 1000 rows of realistic data.
-   
+
    **Options:**
+
    ```bash
    # Customize the number of records
    uv run python manage.py seed_db --customers 500 --products 200 --orders 2000
-   
+
    # Clear existing data before seeding
    uv run python manage.py seed_db --clear
    ```
 
 9. **Create sample data (alternative - smaller dataset)**
+
    ```bash
    uv run python manage.py create_sample_data
    ```
+
    This creates 20 sample customers, 15 products, and 50 orders (for quick testing).
 
-9. **Access the application**
-   ```
-   http://127.0.0.1:8000
-   ```
+10. **Access the application**
+    ```
+    http://127.0.0.1:8000
+    ```
 
 ## Using the Application
 
@@ -250,6 +274,7 @@ The application provides a REST API endpoint for programmatic access:
 **Endpoint:** `POST /query/api/`
 
 **Request:**
+
 ```json
 {
   "question": "How many customers registered last month?"
@@ -257,6 +282,7 @@ The application provides a REST API endpoint for programmatic access:
 ```
 
 **Response (Success):**
+
 ```json
 {
   "success": true,
@@ -275,6 +301,7 @@ The application provides a REST API endpoint for programmatic access:
 ```
 
 **Response (Error):**
+
 ```json
 {
   "success": false,
@@ -289,6 +316,7 @@ The application provides a REST API endpoint for programmatic access:
 ```
 
 **Example using curl:**
+
 ```bash
 curl -X POST http://localhost:8000/query/api/ \
   -H "Content-Type: application/json" \
@@ -296,6 +324,7 @@ curl -X POST http://localhost:8000/query/api/ \
 ```
 
 **Example using Python:**
+
 ```python
 import requests
 
@@ -351,6 +380,7 @@ The project uses PostgreSQL in Docker. SQLite is also supported for local develo
 ### Ollama Model
 
 The application uses a custom `sqlcoder-7b-2:Q4_K_M` GGUF model which is:
+
 - **Source**: Downloaded from HuggingFace (MaziyarPanahi/sqlcoder-7b-2-GGUF)
 - **Format**: GGUF (not in Ollama repository)
 - **Optimized for**: SQL generation from natural language
@@ -361,6 +391,7 @@ The application uses a custom `sqlcoder-7b-2:Q4_K_M` GGUF model which is:
 - **Runs entirely locally**: No API keys needed
 
 The model is automatically set up via the `init_ollama.sh` script which:
+
 1. Downloads the GGUF file from HuggingFace
 2. Creates a Modelfile with optimized parameters
 3. Imports the model into Ollama
@@ -384,9 +415,11 @@ The workflow ensures that only safe, validated SQL queries are executed against 
 The application uses three main tables:
 
 1. **customers** - Customer information
+
    - id, name, email, registration_date
 
 2. **products** - Product catalog
+
    - id, name, category, price
 
 3. **orders** - Customer orders
@@ -417,11 +450,13 @@ For development, you can:
 The project uses **ruff** and **mypy** for code quality and type checking.
 
 **Install development dependencies:**
+
 ```bash
 uv sync --dev
 ```
 
 **Run ruff (linting and formatting):**
+
 ```bash
 # Check for issues
 uv run ruff check .
@@ -434,11 +469,13 @@ uv run ruff format .
 ```
 
 **Run mypy (type checking):**
+
 ```bash
 uv run mypy .
 ```
 
 **Run both:**
+
 ```bash
 uv run ruff check . && uv run ruff format . && uv run mypy .
 ```
@@ -454,6 +491,7 @@ The `seed_db` management command uses the Faker library to generate realistic te
 - **Minimum 1000 Rows**: Automatically ensures at least 1000 total rows across all tables
 
 **Usage:**
+
 ```bash
 # Default: 300 customers, 100 products, 1000 orders (1400 total rows)
 python manage.py seed_db
@@ -470,16 +508,19 @@ python manage.py seed_db --clear
 ### Ollama model not loading
 
 If queries fail, check if the model is loaded:
+
 ```bash
 docker-compose exec ollama ollama list
 ```
 
 If the model is not listed, check the Ollama logs:
+
 ```bash
 docker-compose logs ollama
 ```
 
 The model should be automatically set up on first run. If it failed:
+
 1. Check if the model file was downloaded: `ls -lh models/sqlcoder-7b-2.Q4_K_M.gguf`
 2. Manually run the setup script:
    ```bash
@@ -493,11 +534,13 @@ The model should be automatically set up on first run. If it failed:
 ### Ollama service not responding
 
 Check Ollama logs:
+
 ```bash
 docker-compose logs ollama
 ```
 
 Restart the Ollama service:
+
 ```bash
 docker-compose restart ollama
 ```
@@ -505,6 +548,7 @@ docker-compose restart ollama
 ### Out of memory errors
 
 The sqlcoder-7b-2:Q4_K_M model requires approximately 4-6GB RAM. If you encounter memory issues:
+
 - Ensure Docker has enough memory allocated (recommended: 8GB+)
 - Consider using a smaller model variant or lower quantization
 - Close other memory-intensive applications
@@ -513,6 +557,7 @@ The sqlcoder-7b-2:Q4_K_M model requires approximately 4-6GB RAM. If you encounte
 ### Model download issues
 
 If the model download fails:
+
 - Check your internet connection
 - The download may timeout on slow connections - try again
 - You can manually download the model:
@@ -531,15 +576,14 @@ This project is free for educational and commercial use.
 
 For issues and questions, please create an Issue.
 
- User Question
-       |
-       v
- [Node 1] SQL Generator (Ollama)
-       |
-       v
- [Node 2] SQL Validator
-       |
-       |--- [valid?] ---> [Node 3] Execute SQL ---> return result
-       |
-       L--- [invalid?] -> return error message
-
+User Question
+|
+v
+[Node 1] SQL Generator (Ollama)
+|
+v
+[Node 2] SQL Validator
+|
+|--- [valid?] ---> [Node 3] Execute SQL ---> return result
+|
+L--- [invalid?] -> return error message
