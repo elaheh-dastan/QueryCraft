@@ -56,7 +56,7 @@ class SQLAgent:
             temperature=0.3,
             timeout=60.0,
         )
-        
+
         # Create prompt template
         self.prompt_template = ChatPromptTemplate.from_messages(
             [
@@ -82,7 +82,7 @@ The table names in Django are:
                 ),
             ]
         )
-        
+
         self.graph = self._build_graph()
 
     def get_schema_info(self) -> str:
@@ -152,7 +152,9 @@ orders table:
             )
 
             # Extract SQL from response
-            sql_query = response.content.strip() if hasattr(response, "content") else str(response).strip()
+            sql_query = (
+                response.content.strip() if hasattr(response, "content") else str(response).strip()
+            )
 
             # Clean SQL query
             sql_query = self._clean_sql_query(sql_query)
@@ -202,11 +204,7 @@ orders table:
                 sql_upper = sql_query.strip().upper()
 
                 if sql_upper.startswith("SELECT"):
-                    columns = (
-                        [col[0] for col in cursor.description]
-                        if cursor.description
-                        else []
-                    )
+                    columns = [col[0] for col in cursor.description] if cursor.description else []
                     rows = cursor.fetchall()
 
                     # Convert to list of dictionaries

@@ -29,9 +29,13 @@ htmlcov/
 .hypothesis/
 
 # ==========================================
-# Virtual Environments
+# Virtual Environments & Configuration
 # ==========================================
 .env
+.env.*
+.env.local
+.env.example
+.env.prod.example
 .venv/
 venv/
 ENV/

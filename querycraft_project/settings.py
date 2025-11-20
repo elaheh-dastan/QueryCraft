@@ -1,37 +1,84 @@
 """
 Django settings for QueryCraft project.
+
+This settings file is designed to work out-of-the-box for local development
+with sensible defaults, while allowing environment variables to override
+settings for Docker, staging, and production deployments.
+
+╔════════════════════════════════════════════════════════════════╗
+║ LOCAL DEVELOPMENT DEFAULTS (No Environment Variables Needed)  ║
+╚════════════════════════════════════════════════════════════════╝
+
+Prerequisites:
+  • PostgreSQL running in Docker: docker compose up -d db
+  • Ollama running in Docker: docker compose up -d ollama
+
+Quick Start:
+  just dev-services              # Start DB + Ollama
+  python manage.py migrate
+  python manage.py runserver
+
+Defaults:
+  ✓ SECRET_KEY: 'django-insecure-local-dev-key...' (dev only)
+  ✓ DEBUG: True
+  ✓ ALLOWED_HOSTS: ['localhost', '127.0.0.1', '0.0.0.0', '*']
+  ✓ DATABASE: PostgreSQL @ localhost:5432 (connects to Docker)
+  ✓ OLLAMA_BASE_URL: http://localhost:11434 (connects to Docker)
+  ✓ OLLAMA_MODEL_NAME: sqlcoder-7b-2:local
+
+╔════════════════════════════════════════════════════════════════╗
+║ DOCKER/PRODUCTION (Override with Environment Variables)       ║
+╚════════════════════════════════════════════════════════════════╝
+
+Create .env file with:
+  • SECRET_KEY=<random-key>          (required for production)
+  • DEBUG=0                          (disable debug)
+  • ALLOWED_HOSTS=example.com        (your domains)
+  • POSTGRES_PASSWORD=<secure-pass>  (change default password)
+  • OLLAMA_BASE_URL=http://ollama:11434 (auto-detected in Docker)
+
+Environment Auto-Detection:
+  - Database host: 'db' (Docker) or 'localhost' (local)
+  - Ollama URL: 'http://ollama:11434' (Docker) or 'http://localhost:11434' (local)
 """
 
 from pathlib import Path
 import os
-from django.core.exceptions import ImproperlyConfigured
-
 from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-def get_env_variable(var_name, default=None):
-    """Get environment variable or return default"""
-    try:
-        return os.environ[var_name]
-    except KeyError:
-        if default is not None:
-            return default
-        raise ImproperlyConfigured(f"Set the {var_name} environment variable")
+def get_env(var_name, default=None):
+    """
+    Get environment variable with optional default.
+    Simplified from get_env_variable - always returns default if not set.
+    """
+    return os.environ.get(var_name, default)
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
+# ============================================
+# Core Django Settings
+# ============================================
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_env_variable('SECRET_KEY', 'django-insecure-query-craft-project-key-change-in-production')
+# Default: Safe for local development only
+# Production: Must set SECRET_KEY in environment variables
+SECRET_KEY = get_env(
+    'SECRET_KEY',
+    'django-insecure-local-dev-key-change-for-production-abcdef123456'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_env_variable('DEBUG', '1') == '1'
+# Default: True (enabled for local development)
+# Production: Set DEBUG=0 in environment variables
+DEBUG = get_env('DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = get_env_variable('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,*').split(',')
+# Allowed hosts for the application
+# Default: Permissive for local development
+# Production: Set specific domains in ALLOWED_HOSTS environment variable
+ALLOWED_HOSTS = get_env('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,*').split(',')
 
 
 # Application definition
@@ -77,14 +124,43 @@ TEMPLATES = [
 WSGI_APPLICATION = 'querycraft_project.wsgi.application'
 
 
-# Database
+# ============================================
+# Database Configuration
+# ============================================
+# Default: PostgreSQL (connects to Docker container)
+# Override: Set DATABASE_URL for custom PostgreSQL connection
+#
+# Auto-detection:
+#   - Running locally (default): Connects to localhost:5432 (Docker PostgreSQL)
+#   - Running in Docker: Connects to db:5432 (internal network)
+#
+# Prerequisites for local development:
+#   docker compose up -d db
+#   # or
+#   just dev-services
+#
+# Connection details (defaults):
+#   Host:     localhost (local) or db (Docker)
+#   Port:     5432
+#   Database: querycraft
+#   User:     querycraft
+#   Password: querycraft_password
+#
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Support both PostgreSQL (Docker) and SQLite (local development)
-DATABASE_URL = get_env_variable('DATABASE_URL', None)
+def _is_running_in_docker():
+    """Detect if Django is running inside a Docker container."""
+    return (
+        os.path.exists('/.dockerenv') or
+        os.environ.get('DOCKER_CONTAINER') == 'true' or
+        str(BASE_DIR).startswith('/app')
+    )
+
+# Get database configuration from environment
+DATABASE_URL = get_env('DATABASE_URL')
 
 if DATABASE_URL and ('postgresql' in DATABASE_URL or 'postgres' in DATABASE_URL):
-    # Parse PostgreSQL URL: postgresql://user:password@host:port/dbname
+    # Use explicitly provided DATABASE_URL
     try:
         parsed = urlparse(DATABASE_URL)
         DATABASES = {
@@ -94,22 +170,24 @@ if DATABASE_URL and ('postgresql' in DATABASE_URL or 'postgres' in DATABASE_URL)
                 'USER': parsed.username or 'querycraft',
                 'PASSWORD': parsed.password or 'querycraft_password',
                 'HOST': parsed.hostname or 'db',
-                'PORT': parsed.port or '5432',
+                'PORT': parsed.port or 5432,
             }
         }
-    except Exception:
-        # Fallback to SQLite if parsing fails
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
+    except Exception as e:
+        # Raise error instead of falling back
+        raise Exception(f"Failed to parse DATABASE_URL: {e}")
 else:
+    # Default: PostgreSQL with auto-detection
+    in_docker = _is_running_in_docker()
+
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': get_env('POSTGRES_DB', 'querycraft'),
+            'USER': get_env('POSTGRES_USER', 'querycraft'),
+            'PASSWORD': get_env('POSTGRES_PASSWORD', 'querycraft_password'),
+            'HOST': get_env('POSTGRES_HOST', 'db' if in_docker else 'localhost'),
+            'PORT': get_env('POSTGRES_PORT', '5432'),
         }
     }
 
@@ -159,7 +237,82 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ============================================
 # Ollama Configuration
-OLLAMA_BASE_URL = get_env_variable('OLLAMA_BASE_URL', 'http://ollama:11434')
-OLLAMA_MODEL_NAME = get_env_variable('OLLAMA_MODEL_NAME', 'sqlcoder-7b-2:local')
+# ============================================
+# Default: http://localhost:11434 (local Ollama installation)
+# Override: Set OLLAMA_BASE_URL for custom URL
+#
+# Auto-detection:
+# - In Docker container: uses 'http://ollama:11434' (internal network)
+# - On local machine: uses 'http://localhost:11434' (host machine)
+#
+# Scenarios:
+# 1. Local Ollama (no Docker): http://localhost:11434
+# 2. Hybrid mode (local Django + Docker Ollama): http://localhost:11434
+# 3. Full Docker mode: http://ollama:11434 (auto-detected)
+# 4. External Ollama: Set OLLAMA_BASE_URL=http://your-server:11434
+
+def _get_default_ollama_url():
+    """
+    Detect environment and return appropriate Ollama URL.
+
+    Returns:
+        str: Ollama base URL (with http:// prefix, without trailing slash)
+    """
+    in_docker = _is_running_in_docker()
+
+    if in_docker:
+        # Running in Docker container - use internal service name
+        return 'http://ollama:11434'
+    else:
+        # Running locally - use localhost
+        # Works for both: local Ollama installation OR Docker Ollama with exposed port
+        return 'http://localhost:11434'
+
+# Ollama base URL (auto-detected or from environment)
+OLLAMA_BASE_URL = get_env('OLLAMA_BASE_URL', _get_default_ollama_url())
+
+# Ollama model name for SQL code generation
+# Default: sqlcoder-7b-2:local (optimized for SQL queries)
+OLLAMA_MODEL_NAME = get_env('OLLAMA_MODEL_NAME', 'sqlcoder-7b-2:local')
+
+# ============================================
+# Configuration Summary (Debug Info)
+# ============================================
+# Print configuration summary on startup (only in DEBUG mode)
+if DEBUG and os.environ.get('DJANGO_SETTINGS_MODULE'):
+    import sys
+    if 'runserver' in sys.argv or 'shell' in sys.argv:
+        in_docker = _is_running_in_docker()
+        db_engine = DATABASES['default']['ENGINE'].split('.')[-1].upper()
+        db_location = DATABASES['default'].get('HOST') or DATABASES['default'].get('NAME')
+
+        # Determine configuration mode
+        if DATABASE_URL:
+            config_mode = "Explicit (DATABASE_URL)"
+        else:
+            config_mode = f"PostgreSQL (Auto-detected: {'Docker' if in_docker else 'localhost'})"
+
+        # Check if using default SECRET_KEY
+        using_default_key = 'local-dev-key' in SECRET_KEY or 'insecure' in SECRET_KEY
+
+        print("\n" + "╔" + "═" * 68 + "╗")
+        print("║" + " QueryCraft Configuration Summary".center(68) + "║")
+        print("╚" + "═" * 68 + "╝")
+        print(f"  Environment:     {'🐳 Docker Container' if in_docker else '💻 Local Development'}")
+        print(f"  Config Mode:     {config_mode}")
+        print(f"  Debug Mode:      {'✓ Enabled' if DEBUG else '✗ Disabled'} (DEBUG={DEBUG})")
+        print(f"  Secret Key:      {'⚠ Using default (dev only)' if using_default_key else '✓ Custom key set'}")
+        print(f"  Database:        {db_engine} @ {db_location}")
+        print(f"  Ollama URL:      {OLLAMA_BASE_URL}")
+        print(f"  Ollama Model:    {OLLAMA_MODEL_NAME}")
+        print("  " + "─" * 66)
+
+        if using_default_key and not DEBUG:
+            print("  ⚠ WARNING: Using default SECRET_KEY in production!")
+            print("  " + "─" * 66)
+
+        print("  Ready to accept connections at http://127.0.0.1:8000")
+        print("╚" + "═" * 68 + "╝\n")
 

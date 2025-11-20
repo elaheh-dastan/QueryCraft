@@ -6,34 +6,34 @@ import random
 
 
 class Command(BaseCommand):
-    help = 'Create sample data for testing the application'
+    help = "Create sample data for testing the application"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--customers',
+            "--customers",
             type=int,
             default=20,
-            help='Number of sample customers',
+            help="Number of sample customers",
         )
         parser.add_argument(
-            '--products',
+            "--products",
             type=int,
             default=15,
-            help='Number of sample products',
+            help="Number of sample products",
         )
         parser.add_argument(
-            '--orders',
+            "--orders",
             type=int,
             default=50,
-            help='Number of sample orders',
+            help="Number of sample orders",
         )
 
     def handle(self, *args, **options):
-        num_customers = options['customers']
-        num_products = options['products']
-        num_orders = options['orders']
+        num_customers = options["customers"]
+        num_products = options["products"]
+        num_orders = options["orders"]
 
-        self.stdout.write('Creating sample data...')
+        self.stdout.write("Creating sample data...")
 
         # Delete previous data (optional)
         Order.objects.all().delete()
@@ -41,17 +41,17 @@ class Command(BaseCommand):
         Product.objects.all().delete()
 
         # Create products first
-        categories = ['Electronics', 'Clothing', 'Books', 'Food', 'Toys', 'Home & Garden']
+        categories = ["Electronics", "Clothing", "Books", "Food", "Toys", "Home & Garden"]
         products = []
         for i in range(num_products):
             product = Product.objects.create(
-                name=f'Product {i+1}',
+                name=f"Product {i + 1}",
                 category=random.choice(categories),
-                price=round(random.uniform(10.0, 500.0), 2)
+                price=round(random.uniform(10.0, 500.0), 2),
             )
             products.append(product)
 
-        self.stdout.write(self.style.SUCCESS(f'✓ {num_products} products created'))
+        self.stdout.write(self.style.SUCCESS(f"✓ {num_products} products created"))
 
         # Create customers
         customers = []
@@ -59,31 +59,31 @@ class Command(BaseCommand):
             # Create customers at different time periods
             days_ago = random.randint(0, 365)
             registration_date = date.today() - timedelta(days=days_ago)
-            
+
             customer = Customer.objects.create(
-                name=f'Customer {i+1}',
-                email=f'customer{i+1}@example.com',
-                registration_date=registration_date
+                name=f"Customer {i + 1}",
+                email=f"customer{i + 1}@example.com",
+                registration_date=registration_date,
             )
             customers.append(customer)
 
-        self.stdout.write(self.style.SUCCESS(f'✓ {num_customers} customers created'))
+        self.stdout.write(self.style.SUCCESS(f"✓ {num_customers} customers created"))
 
         # Create orders
-        statuses = ['pending', 'completed', 'completed', 'cancelled']
+        statuses = ["pending", "completed", "completed", "cancelled"]
         for i in range(num_orders):
             customer = random.choice(customers)
             product = random.choice(products)
             days_ago = random.randint(0, 90)
             order_date = date.today() - timedelta(days=days_ago)
-            
+
             Order.objects.create(
                 customer=customer,
                 product=product,
                 order_date=order_date,
                 quantity=random.randint(1, 10),
-                status=random.choice(statuses)
+                status=random.choice(statuses),
             )
 
-        self.stdout.write(self.style.SUCCESS(f'✓ {num_orders} orders created'))
-        self.stdout.write(self.style.SUCCESS('✓ Sample data created successfully!'))
+        self.stdout.write(self.style.SUCCESS(f"✓ {num_orders} orders created"))
+        self.stdout.write(self.style.SUCCESS("✓ Sample data created successfully!"))

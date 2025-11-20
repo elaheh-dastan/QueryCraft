@@ -6,6 +6,7 @@
 #
 # Usage:
 #   Development: docker compose up
+#   Staging:     docker compose --profile stage up
 #   Production:  docker compose --profile prod up
 #
 # Environment variables should be set in .env file
@@ -53,15 +54,6 @@ services:
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
     restart: unless-stopped
-    # Resource limits (Ollama requires 4-8GB RAM for sqlcoder-7b-2)
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-          cpus: '4'
-        reservations:
-          memory: 4G
-          cpus: '2'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
@@ -118,7 +110,7 @@ services:
       start_period: 30s
     # Development profile (default)
     profiles:
-      - ""
+      - stage
 
   # ==========================================
   # Django Web Application (Production)
@@ -137,13 +129,13 @@ services:
     ports:
       - "${WEB_PORT:-8000}:8000"
     environment:
-      # Django settings (must be properly configured via .env)
+      # Django settings (must be properly configured via .env for production)
       DEBUG: ${DEBUG:-0}
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:?ALLOWED_HOSTS must be set in .env}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-prod-key-MUST-be-changed}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
 
       # Database connection
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-querycraft}:${POSTGRES_PASSWORD:-querycraft_password}@db:5432/${POSTGRES_DB:-querycraft}
 
       # Ollama connection
       OLLAMA_BASE_URL: http://ollama:11434
@@ -164,18 +156,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-    # Production profile
     profiles:
       - prod
-    # Resource limits for production
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '2'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
 
 # ==========================================
 # Named Volumes
