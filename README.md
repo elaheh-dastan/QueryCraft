@@ -3,9 +3,9 @@
 A Django web application that converts natural language questions to SQL queries using an AI Agent
 and extracts results from the database.
 
-![demo.png](demo.png)
-
 ![demo.gif](demo.gif)
+
+![demo.png](demo.png)
 
 ## Architecture
 
