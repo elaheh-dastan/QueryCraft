@@ -68,10 +68,10 @@ dev-services-down:
 # View logs from development services
 dev-logs service="":
     #!/usr/bin/env bash
-    if [ -z "{{service}}" ]; then
+    if [ -z "{{ service }}" ]; then
         docker compose logs -f db ollama
     else
-        docker compose logs -f {{service}}
+        docker compose logs -f {{ service }}
     fi
 
 # Restart development services
@@ -123,10 +123,10 @@ stage-restart:
 # View staging logs
 stage-logs service="":
     #!/usr/bin/env bash
-    if [ -z "{{service}}" ]; then
+    if [ -z "{{ service }}" ]; then
         docker compose --profile stage logs -f
     else
-        docker compose --profile stage logs -f {{service}}
+        docker compose --profile stage logs -f {{ service }}
     fi
 
 # Check staging status
@@ -135,7 +135,7 @@ stage-status:
 
 # Execute command in staging web container
 stage-exec cmd:
-    docker compose --profile stage exec web {{cmd}}
+    docker compose --profile stage exec web {{ cmd }}
 
 # Run migrations in staging
 stage-migrate:
@@ -186,10 +186,10 @@ prod-restart:
 # View production logs
 prod-logs service="":
     #!/usr/bin/env bash
-    if [ -z "{{service}}" ]; then
+    if [ -z "{{ service }}" ]; then
         docker compose --profile prod logs -f
     else
-        docker compose --profile prod logs -f {{service}}
+        docker compose --profile prod logs -f {{ service }}
     fi
 
 # Check production status
@@ -198,7 +198,7 @@ prod-status:
 
 # Execute command in production web container
 prod-exec cmd:
-    docker compose --profile prod exec web-prod {{cmd}}
+    docker compose --profile prod exec web-prod {{ cmd }}
 
 # Run migrations in production
 prod-migrate:
@@ -319,7 +319,7 @@ docker-pull:
 
 # Rebuild all images from scratch (no cache)
 docker-rebuild profile="stage":
-    docker compose --profile {{profile}} build --no-cache
+    docker compose --profile {{ profile }} build --no-cache
 
 # View resource usage of containers
 docker-stats:
@@ -331,13 +331,13 @@ docker-stats:
 
 # Backup database to file
 db-backup file="backup.sql":
-    docker compose exec -T db pg_dump -U querycraft querycraft > {{file}}
-    @echo "Database backed up to {{file}}"
+    docker compose exec -T db pg_dump -U querycraft querycraft > {{ file }}
+    @echo "Database backed up to {{ file }}"
 
 # Restore database from file
 db-restore file="backup.sql":
-    docker compose exec -T db psql -U querycraft querycraft < {{file}}
-    @echo "Database restored from {{file}}"
+    docker compose exec -T db psql -U querycraft querycraft < {{ file }}
+    @echo "Database restored from {{ file }}"
 
 # Access PostgreSQL CLI
 db-shell:
@@ -363,7 +363,7 @@ ollama-list:
 
 # Pull a model in Ollama
 ollama-pull model="sqlcoder-7b-2:local":
-    docker compose exec ollama ollama pull {{model}}
+    docker compose exec ollama ollama pull {{ model }}
 
 # Create sqlcoder model from Modelfile
 ollama-create:
@@ -393,12 +393,12 @@ docker-validate:
 
 # Health check for all services
 health-check profile="stage":
-    @echo "Checking health of {{profile}} services..."
-    docker compose --profile {{profile}} ps
+    @echo "Checking health of {{ profile }} services..."
+    docker compose --profile {{ profile }} ps
     @echo ""
     curl -f http://localhost:8000/ || echo "✗ Web service not responding"
     curl -f http://localhost:11434/api/tags || echo "✗ Ollama service not responding"
-    docker compose --profile {{profile}} exec db pg_isready -U querycraft || echo "✗ Database not ready"
+    docker compose --profile {{ profile }} exec db pg_isready -U querycraft || echo "✗ Database not ready"
 
 # ============================================
 # Quick Reference
