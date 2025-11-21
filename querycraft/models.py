@@ -13,7 +13,7 @@ class Customer(models.Model):
         verbose_name_plural = "Customers"
         ordering = ["-registration_date"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -29,7 +29,7 @@ class Product(models.Model):
         verbose_name_plural = "Products"
         ordering = ["name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -60,5 +60,5 @@ class Order(models.Model):
         verbose_name_plural = "Orders"
         ordering = ["-order_date"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Order {self.id} - {self.customer.name} - {self.product.name}"
