@@ -73,18 +73,12 @@ class SQLAgent:
         # Create prompt template (using PromptTemplate for completion API)
         self.prompt_template = PromptTemplate.from_template(
             """You are a SQL expert who converts natural language questions to precise SQL queries.
-Always return only the SQL query without additional explanations.
-
 Database schema:
 {schema}
 
 Question: {question}
 
 Return only the SQL query, without additional explanations. Use exact table and column names.
-The table names in Django are:
-- querycraft_customer (for customers)
-- querycraft_product (for products)
-- querycraft_order (for orders)
 
 SQL Query:"""
         )
@@ -95,19 +89,19 @@ SQL Query:"""
     def get_schema_info(self) -> str:
         """Get database schema information"""
         schema_info = """
-customers table:
+querycraft_customer table:
 - id (INTEGER, PRIMARY KEY)
 - name (VARCHAR)
 - email (VARCHAR)
 - registration_date (DATE)
 
-products table:
+querycraft_product table:
 - id (INTEGER, PRIMARY KEY)
 - name (VARCHAR)
 - category (VARCHAR)
 - price (DECIMAL)
 
-orders table:
+querycraft_order table:
 - id (INTEGER, PRIMARY KEY)
 - customer_id (INTEGER, FOREIGN KEY to customers.id)
 - product_id (INTEGER, FOREIGN KEY to products.id)
