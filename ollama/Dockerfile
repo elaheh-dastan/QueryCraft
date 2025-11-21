@@ -24,8 +24,8 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create directory structure
 RUN mkdir -p /app/models
@@ -38,7 +38,7 @@ COPY init_ollama.sh /app/init_ollama.sh
 RUN chmod +x /app/init_ollama.sh
 
 # Copy entrypoint script (starts Ollama + loads model)
-COPY entrypoint.ollama.sh /app/entrypoint.sh
+COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose Ollama API port
@@ -46,7 +46,7 @@ EXPOSE 11434
 
 # Health check to ensure Ollama is responsive
 HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
-    CMD curl -f http://localhost:11434/api/tags || exit 1
+  CMD curl -f http://localhost:11434/api/tags || exit 1
 
 # Use custom entrypoint for initialization
 ENTRYPOINT ["/app/entrypoint.sh"]

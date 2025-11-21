@@ -41,8 +41,8 @@ services:
   # ==========================================
   ollama:
     build:
-      context: .
-      dockerfile: Dockerfile.ollama
+      context: ollama
+      dockerfile: Dockerfile
     container_name: querycraft_ollama
     volumes:
       # Persistent storage for Ollama data (models, config)
