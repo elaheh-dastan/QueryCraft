@@ -23,6 +23,32 @@ dev = [
 
 [tool.mypy]
 plugins = ["mypy_django_plugin.main"]
+python_version = "3.13"
+
+# Strict mode - enables all optional error checking flags
+strict = true
+
+# Performance optimization (new in 1.18+)
+fixed_format_cache = true
+
+# Import discovery
+namespace_packages = true
+explicit_package_bases = true
+
+# Warnings
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+
+# Error messages
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+
+# Exclude patterns
+exclude = ["^.venv/", "^venv/", "^migrations/", "^tests/"]
 
 [tool.django-stubs]
 django_settings_module = "querycraft_project.settings"

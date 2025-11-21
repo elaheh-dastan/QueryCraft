@@ -1,5 +1,7 @@
 import random
+from argparse import ArgumentParser
 from datetime import date, timedelta
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -9,7 +11,7 @@ from querycraft.models import Customer, Order, Product
 class Command(BaseCommand):
     help = "Create sample data for testing the application"
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--customers",
             type=int,
@@ -29,7 +31,7 @@ class Command(BaseCommand):
             help="Number of sample orders",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         num_customers = options["customers"]
         num_products = options["products"]
         num_orders = options["orders"]

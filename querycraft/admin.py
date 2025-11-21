@@ -4,7 +4,7 @@ from .models import Customer, Order, Product
 
 
 @admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
+class CustomerAdmin(admin.ModelAdmin):  # type: ignore
     list_display = ["id", "name", "email", "registration_date"]
     list_filter = ["registration_date"]
     search_fields = ["name", "email"]
@@ -12,14 +12,14 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(admin.ModelAdmin):  # type: ignore
     list_display = ["id", "name", "category", "price"]
     list_filter = ["category"]
     search_fields = ["name", "category"]
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(admin.ModelAdmin):  # type: ignore
     list_display = ["id", "customer", "product", "order_date", "quantity", "status"]
     list_filter = ["status", "order_date"]
     search_fields = ["customer__name", "product__name"]

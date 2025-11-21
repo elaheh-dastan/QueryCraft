@@ -6,7 +6,7 @@ with sensible defaults, while allowing environment variables to override
 settings for Docker, staging, and production deployments.
 
 ╔════════════════════════════════════════════════════════════════╗
-║ LOCAL DEVELOPMENT DEFAULTS (No Environment Variables Needed)  ║
+║ LOCAL DEVELOPMENT DEFAULTS (No Environment Variables Needed)   ║
 ╚════════════════════════════════════════════════════════════════╝
 
 Prerequisites:
@@ -27,7 +27,7 @@ Defaults:
   ✓ OLLAMA_MODEL_NAME: sqlcoder-7b-2:local
 
 ╔════════════════════════════════════════════════════════════════╗
-║ DOCKER/PRODUCTION (Override with Environment Variables)       ║
+║ DOCKER/PRODUCTION (Override with Environment Variables)        ║
 ╚════════════════════════════════════════════════════════════════╝
 
 Create .env file with:
@@ -49,15 +49,6 @@ from urllib.parse import urlparse
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-def get_env(var_name, default=None):
-    """
-    Get environment variable with optional default.
-    Simplified from get_env_variable - always returns default if not set.
-    """
-    return os.environ.get(var_name, default)
-
-
 # ============================================
 # Core Django Settings
 # ============================================
@@ -65,19 +56,21 @@ def get_env(var_name, default=None):
 # SECURITY WARNING: keep the secret key used in production secret!
 # Default: Safe for local development only
 # Production: Must set SECRET_KEY in environment variables
-SECRET_KEY = get_env(
+SECRET_KEY: str = os.environ.get(
     "SECRET_KEY", "django-insecure-local-dev-key-change-for-production-abcdef123456"
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Default: True (enabled for local development)
 # Production: Set DEBUG=0 in environment variables
-DEBUG = get_env("DEBUG", "1") == "1"
+DEBUG: bool = os.environ.get("DEBUG", "1") == "1"
 
 # Allowed hosts for the application
 # Default: Permissive for local development
 # Production: Set specific domains in ALLOWED_HOSTS environment variable
-ALLOWED_HOSTS = get_env("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,*").split(",")
+ALLOWED_HOSTS: list[str] = os.environ.get(
+    "ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,*"
+).split(",")
 
 
 # Application definition
@@ -148,19 +141,10 @@ WSGI_APPLICATION = "querycraft_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 
-def _is_running_in_docker():
-    """Detect if Django is running inside a Docker container."""
-    return (
-        os.path.exists("/.dockerenv")
-        or os.environ.get("DOCKER_CONTAINER") == "true"
-        or str(BASE_DIR).startswith("/app")
-    )
-
-
 # Get database configuration from environment
-DATABASE_URL = get_env("DATABASE_URL")
+DATABASE_URL: str | None = os.environ.get("DATABASE_URL")
 
-if DATABASE_URL and ("postgresql" in DATABASE_URL or "postgres" in DATABASE_URL):
+if DATABASE_URL:
     # Use explicitly provided DATABASE_URL
     try:
         parsed = urlparse(DATABASE_URL)
@@ -178,17 +162,14 @@ if DATABASE_URL and ("postgresql" in DATABASE_URL or "postgres" in DATABASE_URL)
         # Raise error instead of falling back
         raise Exception(f"Failed to parse DATABASE_URL: {e}")
 else:
-    # Default: PostgreSQL with auto-detection
-    in_docker = _is_running_in_docker()
-
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": get_env("POSTGRES_DB", "querycraft"),
-            "USER": get_env("POSTGRES_USER", "querycraft"),
-            "PASSWORD": get_env("POSTGRES_PASSWORD", "querycraft_password"),
-            "HOST": get_env("POSTGRES_HOST", "db" if in_docker else "localhost"),
-            "PORT": get_env("POSTGRES_PORT", "5432"),
+            "NAME": os.environ.get("POSTGRES_DB", "querycraft"),
+            "USER": os.environ.get("POSTGRES_USER", "querycraft"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "querycraft_password"),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
         }
     }
 
@@ -309,40 +290,13 @@ os.makedirs(logs_dir, exist_ok=True)
 # Default: http://localhost:11434 (local Ollama installation)
 # Override: Set OLLAMA_BASE_URL for custom URL
 #
-# Auto-detection:
-# - In Docker container: uses 'http://ollama:11434' (internal network)
-# - On local machine: uses 'http://localhost:11434' (host machine)
-#
-# Scenarios:
-# 1. Local Ollama (no Docker): http://localhost:11434
-# 2. Hybrid mode (local Django + Docker Ollama): http://localhost:11434
-# 3. Full Docker mode: http://ollama:11434 (auto-detected)
-# 4. External Ollama: Set OLLAMA_BASE_URL=http://your-server:11434
-
-
-def _get_default_ollama_url():
-    """
-    Detect environment and return appropriate Ollama URL.
-
-    Returns:
-        str: Ollama base URL (with http:// prefix, without trailing slash)
-    """
-    in_docker = _is_running_in_docker()
-
-    if in_docker:
-        # Running in Docker container - use internal service name
-        return "http://ollama:11434"
-    # Running locally - use localhost
-    # Works for both: local Ollama installation OR Docker Ollama with exposed port
-    return "http://localhost:11434"
-
 
 # Ollama base URL (auto-detected or from environment)
-OLLAMA_BASE_URL = get_env("OLLAMA_BASE_URL", _get_default_ollama_url())
+OLLAMA_BASE_URL: str = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # Ollama model name for SQL code generation
 # Default: sqlcoder-7b-2:local (optimized for SQL queries)
-OLLAMA_MODEL_NAME = get_env("OLLAMA_MODEL_NAME", "sqlcoder-7b-2:local")
+OLLAMA_MODEL_NAME: str = os.environ.get("OLLAMA_MODEL_NAME", "sqlcoder-7b-2:local")
 
 # ============================================
 # Configuration Summary (Debug Info)
@@ -352,8 +306,7 @@ if DEBUG and os.environ.get("DJANGO_SETTINGS_MODULE"):
     import sys
 
     if "runserver" in sys.argv or "shell" in sys.argv:
-        in_docker = _is_running_in_docker()
-        db_engine = DATABASES["default"]["ENGINE"].split(".")[-1].upper()
+        db_engine = DATABASES["default"].get("ENGINE")
         db_location = DATABASES["default"].get("HOST") or DATABASES["default"].get(
             "NAME"
         )
@@ -362,9 +315,7 @@ if DEBUG and os.environ.get("DJANGO_SETTINGS_MODULE"):
         if DATABASE_URL:
             config_mode = "Explicit (DATABASE_URL)"
         else:
-            config_mode = (
-                f"PostgreSQL (Auto-detected: {'Docker' if in_docker else 'localhost'})"
-            )
+            config_mode = "PostgreSQL (Auto-detected: localhost)"
 
         # Check if using default SECRET_KEY
         using_default_key = "local-dev-key" in SECRET_KEY or "insecure" in SECRET_KEY
@@ -372,9 +323,6 @@ if DEBUG and os.environ.get("DJANGO_SETTINGS_MODULE"):
         print("\n" + "╔" + "═" * 68 + "╗")
         print("║" + " QueryCraft Configuration Summary".center(68) + "║")
         print("╚" + "═" * 68 + "╝")
-        print(
-            f"  Environment:     {'🐳 Docker Container' if in_docker else '💻 Local Development'}"
-        )
         print(f"  Config Mode:     {config_mode}")
         print(
             f"  Debug Mode:      {'✓ Enabled' if DEBUG else '✗ Disabled'} (DEBUG={DEBUG})"

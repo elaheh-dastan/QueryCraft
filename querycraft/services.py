@@ -53,7 +53,7 @@ class QueryResult(BaseModel):
 class SQLAgent:
     """AI agent for converting questions to SQL using LangGraph workflow"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         logger.info("Initializing SQLAgent")
         logger.debug(
             "Ollama configuration - Model: %s, Base URL: %s",
@@ -67,8 +67,7 @@ class SQLAgent:
             model=settings.OLLAMA_MODEL_NAME,
             base_url=settings.OLLAMA_BASE_URL,
             temperature=0.3,
-            timeout=60.0,
-            num_predict=512,  # Allow up to 512 tokens in response
+            num_predict=512,
         )
 
         # Create prompt template (using PromptTemplate for completion API)
@@ -180,13 +179,8 @@ orders table:
             logger.debug("Ollama response type: %s", type(response))
 
             # OllamaLLM returns a string directly
-            if isinstance(response, str):
-                sql_query = response.strip()
-                logger.debug("Response is string type")
-            else:
-                # Fallback for other types
-                sql_query = str(response).strip()
-                logger.debug("Response converted to string")
+            sql_query = response.strip()
+            logger.debug("Response is string type")
 
             logger.debug(
                 "Raw LLM response (length=%d): '%s'", len(sql_query), sql_query
