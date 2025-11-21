@@ -303,66 +303,36 @@ orders table:
     @staticmethod
     def _clean_sql_query(sql: str) -> str:
         """Clean and extract SQL from model response"""
-        original_sql = sql
+        original_sql = sql.strip()
 
-        # Remove markdown code blocks if present
+        # Extract content from markdown code blocks if present
         if "```" in sql:
-            parts = sql.split("```")
-            if len(parts) >= 2:
-                # Get the content between first pair of ```
-                sql = parts[1]
-                # Remove language identifier if present
-                if sql.strip().lower().startswith(
-                    ("sql\n", "sql ")
-                ) or sql.strip().upper().startswith(("SQL\n", "SQL ")):
-                    sql = sql.strip()[3:]
-            sql = sql.strip()
+            # Find content between first pair of ```
+            match = re.search(r"```(?:sql)?\s*\n?(.*?)```", sql, re.IGNORECASE | re.DOTALL)
+            if match:
+                sql = match.group(1).strip()
+            else:
+                # Fallback: split and take content after first ```
+                parts = sql.split("```")
+                if len(parts) >= 2:
+                    sql = parts[1].strip()
+                    # Remove language identifier (sql, SQL) if present
+                    sql = re.sub(r"^(sql|SQL)\s+", "", sql, flags=re.IGNORECASE)
 
-        # Strategy 1: Look for SELECT/WITH/etc with regex (case-insensitive, allows leading whitespace)
-        sql_pattern = r"\b(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*?(?:;|$)"
+        # Extract SQL query using regex (matches from SQL keyword to end or semicolon)
+        sql_pattern = r"(SELECT|WITH|INSERT|UPDATE|DELETE).*?(?=;|$)"
         match = re.search(sql_pattern, sql, re.IGNORECASE | re.DOTALL)
-
         if match:
             sql = match.group(0).strip()
-        else:
-            # Strategy 2: Line-by-line extraction
-            lines = sql.split("\n")
-            sql_lines = []
-            in_sql = False
-
-            for line in lines:
-                line_stripped = line.strip()
-                # Start collecting when we find SQL keywords
-                if re.match(
-                    r"^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)\b",
-                    line_stripped,
-                    re.IGNORECASE,
-                ):
-                    in_sql = True
-
-                if in_sql and line_stripped:
-                    sql_lines.append(line_stripped)
-
-                if in_sql and line_stripped.endswith(";"):
-                    break
-
-            if sql_lines:
-                sql = " ".join(sql_lines).strip()
-            else:
-                # Strategy 3: Use original if no patterns found
-                sql = sql.strip()
 
         # Remove trailing semicolon if present
-        if sql.endswith(";"):
-            sql = sql[:-1].strip()
+        sql = sql.rstrip(";").strip()
 
-        # Final validation: if still empty or too short, return original
-        if not sql or len(sql) < 5:
-            result = original_sql.strip()
-        else:
-            result = sql
+        # Normalize whitespace: replace multiple whitespace characters with single space
+        sql = re.sub(r"\s+", " ", sql)
 
-        return result
+        # Return cleaned SQL if valid, otherwise return original
+        return sql if sql and len(sql) >= 5 else original_sql
 
     def _validate_sql(self, sql: str) -> ValidationResult:
         """Validate SQL query syntax and safety"""

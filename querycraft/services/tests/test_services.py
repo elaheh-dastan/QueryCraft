@@ -163,7 +163,10 @@ class TestCleanSQLQuery(TestCase):
         )"""
         result = SQLAgent._clean_sql_query(sql)
         self.assertIn("SELECT c.name FROM querycraft_customer c WHERE c.id IN", result)
-        self.assertIn("SELECT customer_id FROM querycraft_order WHERE status = 'completed'", result)
+        self.assertIn(
+            "SELECT customer_id FROM querycraft_order WHERE status = 'completed'",
+            result,
+        )
 
     def test_query_with_multiple_markdown_blocks(self):
         """Test that only the first markdown block is processed"""
@@ -189,26 +192,36 @@ class TestCleanSQLQuery(TestCase):
 
         This query will return all customers who registered in 2024."""
         result = SQLAgent._clean_sql_query(sql)
-        self.assertEqual(result, "SELECT id, name, email FROM querycraft_customer WHERE registration_date >= '2024-01-01'")
+        self.assertEqual(
+            result,
+            "SELECT id, name, email FROM querycraft_customer WHERE registration_date >= '2024-01-01'",
+        )
 
     def test_query_without_markdown_but_with_prefix_text(self):
         """Test extraction when SQL is not in markdown but has prefix text"""
         sql = """The query you need is:
         SELECT name, price FROM querycraft_product WHERE category = 'books'"""
         result = SQLAgent._clean_sql_query(sql)
-        self.assertEqual(result, "SELECT name, price FROM querycraft_product WHERE category = 'books'")
+        self.assertEqual(
+            result,
+            "SELECT name, price FROM querycraft_product WHERE category = 'books'",
+        )
 
     def test_query_with_special_characters(self):
         """Test query containing special characters in strings"""
         sql = "SELECT * FROM querycraft_customer WHERE email LIKE '%@example.com'"
         result = SQLAgent._clean_sql_query(sql)
-        self.assertEqual(result, "SELECT * FROM querycraft_customer WHERE email LIKE '%@example.com'")
+        self.assertEqual(
+            result, "SELECT * FROM querycraft_customer WHERE email LIKE '%@example.com'"
+        )
 
     def test_query_with_escaped_quotes(self):
         """Test query with escaped quotes"""
         sql = "SELECT * FROM querycraft_customer WHERE name = 'O''Brien'"
         result = SQLAgent._clean_sql_query(sql)
-        self.assertEqual(result, "SELECT * FROM querycraft_customer WHERE name = 'O''Brien'")
+        self.assertEqual(
+            result, "SELECT * FROM querycraft_customer WHERE name = 'O''Brien'"
+        )
 
     def test_multiline_with_line_by_line_extraction(self):
         """Test line-by-line extraction fallback"""
@@ -221,4 +234,4 @@ class TestCleanSQLQuery(TestCase):
 
         Additional notes"""
         result = SQLAgent._clean_sql_query(sql)
-        self.assertIn("SELECT c.id, c.name FROM querycraft_customer c", result)
+        self.assertEqual("SELECT c.id, c.name FROM querycraft_customer c", result)
