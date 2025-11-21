@@ -57,6 +57,10 @@ download-model:
 # ============================================
 # Use these when running Django locally with Docker services
 
+# Build development images
+dev-build:
+    docker compose build
+
 # Start only database and Ollama services (for local Django development)
 dev-services:
     docker compose up -d db ollama
