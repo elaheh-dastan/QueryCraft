@@ -14,7 +14,6 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 
-# Configure logger for this module
 logger = logging.getLogger(__name__)
 
 
@@ -187,7 +186,8 @@ orders table:
                 }
 
             # Clean SQL query
-            sql_query = self._clean_sql_query(sql_query)
+            logger.debug("Cleaning SQL query...")
+            sql_query = SQLAgent._clean_sql_query(sql_query)
             logger.info("Generated SQL Query: %s", sql_query)
             logger.info("SQL GENERATION NODE - Completed successfully")
 
@@ -300,15 +300,15 @@ orders table:
             return "valid"
         return "invalid"
 
-    def _clean_sql_query(self, sql: str) -> str:
+    @staticmethod
+    def _clean_sql_query(sql: str) -> str:
         """Clean and extract SQL from model response"""
-        logger.debug("Cleaning SQL query. Original length: %d characters", len(sql))
-        logger.debug("Original SQL: %s", sql)
+        import re
+
         original_sql = sql
 
         # Remove markdown code blocks if present
         if "```" in sql:
-            logger.debug("Detected markdown code block")
             parts = sql.split("```")
             if len(parts) >= 2:
                 # Get the content between first pair of ```
@@ -319,7 +319,6 @@ orders table:
                 ) or sql.strip().upper().startswith(("SQL\n", "SQL ")):
                     sql = sql.strip()[3:]
             sql = sql.strip()
-            logger.debug("After removing markdown: %s", sql)
 
         # Strategy 1: Look for SELECT/WITH/etc with regex (case-insensitive, allows leading whitespace)
         sql_pattern = r"\b(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*?(?:;|$)"
@@ -327,13 +326,8 @@ orders table:
 
         if match:
             sql = match.group(0).strip()
-            logger.debug(
-                "Extracted SQL using regex pattern: %s",
-                sql[:100] if len(sql) > 100 else sql,
-            )
         else:
             # Strategy 2: Line-by-line extraction
-            logger.debug("Regex pattern didn't match, trying line-by-line extraction")
             lines = sql.split("\n")
             sql_lines = []
             in_sql = False
@@ -347,7 +341,6 @@ orders table:
                     re.IGNORECASE,
                 ):
                     in_sql = True
-                    logger.debug("Found SQL start at line: %s", line_stripped)
 
                 if in_sql and line_stripped:
                     sql_lines.append(line_stripped)
@@ -357,13 +350,8 @@ orders table:
 
             if sql_lines:
                 sql = " ".join(sql_lines).strip()
-                logger.debug(
-                    "After line-by-line extraction: %s",
-                    sql[:100] if len(sql) > 100 else sql,
-                )
             else:
                 # Strategy 3: Use original if no patterns found
-                logger.warning("No SQL pattern found, using original cleaned text")
                 sql = sql.strip()
 
         # Remove trailing semicolon if present
@@ -372,14 +360,10 @@ orders table:
 
         # Final validation: if still empty or too short, return original
         if not sql or len(sql) < 5:
-            logger.error(
-                "Cleaning resulted in empty or very short SQL! Using original input"
-            )
             result = original_sql.strip()
         else:
             result = sql
 
-        logger.debug("Final cleaned SQL: %s", result)
         return result
 
     def _validate_sql(self, sql: str) -> ValidationResult:
