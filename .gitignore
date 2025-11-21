@@ -33,7 +33,6 @@ db.sqlite3-journal
 
 # Models (large GGUF files)
 models/*.gguf
-models/
 
 # IDE
 .vscode/
