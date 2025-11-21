@@ -303,8 +303,6 @@ orders table:
     @staticmethod
     def _clean_sql_query(sql: str) -> str:
         """Clean and extract SQL from model response"""
-        import re
-
         original_sql = sql
 
         # Remove markdown code blocks if present
