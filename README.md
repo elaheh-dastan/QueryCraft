@@ -3,19 +3,23 @@
 A Django web application that converts natural language questions to SQL queries using an AI Agent
 and extracts results from the database.
 
+![demo.png](demo.png)
+
 ![demo.gif](demo.gif)
 
 ## Architecture
 
 The project uses Docker Compose with deployment profiles:
 
-**Services:**
+### Services
+
 1. **db** - PostgreSQL 18 database
 2. **ollama** - Local LLM service running `sqlcoder-7b-2:local` model
 3. **web** - Django application (staging profile)
 4. **web-prod** - Django application (production profile)
 
-**Deployment Modes:**
+### Deployment Modes
+
 - **Local Development**: Django runs locally, services in Docker (recommended for development)
 - **Staging**: All services in Docker with `--profile stage`
 - **Production**: All services in Docker with `--profile prod`
@@ -27,11 +31,11 @@ The project uses Docker Compose with deployment profiles:
 - Docker and Docker Compose
 - Just (optional but recommended): `cargo install just` or `brew install just`
 - At least 8GB RAM (for Ollama model)
-- Python 3.11+ (for local development)
+- Python 3.13+ (for local development)
 
 ### Option 1: Staging Deployment (Full Docker)
 
-**Using Justfile (Recommended):**
+#### Using Justfile (Recommended)
 
 ```bash
 # Download model from HuggingFace
@@ -48,7 +52,7 @@ just stage-exec "python manage.py create_sample_data"
 # Access application at http://localhost:8000
 ```
 
-**Using Docker Compose directly:**
+#### Using Docker Compose directly
 
 ```bash
 # Start staging environment
@@ -67,7 +71,7 @@ docker compose --profile stage exec web python manage.py create_sample_data
 
 Run Django locally with database and Ollama in Docker for better IDE integration:
 
-**Using Justfile (Recommended):**
+#### Using Justfile (Recommended)
 
 ```bash
 # One-time setup: start services, migrate, create sample data
@@ -79,7 +83,7 @@ just runserver
 # Access application at http://localhost:8000
 ```
 
-**Manual steps:**
+#### Manual steps
 
 ```bash
 # Install dependencies
@@ -101,6 +105,7 @@ uv run python manage.py runserver
 ### Model Setup
 
 On first run, the Ollama service will automatically:
+
 - Download the custom GGUF model file from HuggingFace (~4.5GB)
 - Import the model as `sqlcoder-7b-2:local`
 
@@ -108,6 +113,7 @@ This may take 10-15 minutes depending on your internet connection.
 The model is cached in the `models/` directory and `ollama_data` volume.
 
 Monitor setup progress:
+
 ```bash
 docker compose logs -f ollama
 ```
@@ -115,6 +121,7 @@ docker compose logs -f ollama
 ### Creating Sample Data
 
 The `create_sample_data` command creates a small test dataset:
+
 - 20 customers (30% from last month, 20% from this month, 50% older)
 - 15 products across various categories
 - 50 orders linking customers and products
@@ -169,6 +176,7 @@ docker compose exec ollama ollama show sqlcoder-7b-2:local
 ### Setup Steps
 
 1. **Create production environment file**
+
    ```bash
    cp .env.prod.example .env
    ```
@@ -180,6 +188,7 @@ docker compose exec ollama ollama show sqlcoder-7b-2:local
    - Set a strong `POSTGRES_PASSWORD`
 
 3. **Validate and deploy**
+
    ```bash
    # Validate configuration
    just prod-validate
@@ -254,6 +263,7 @@ docker compose exec ollama ollama show sqlcoder-7b-2:local
    ```
 
    Customize if needed:
+
    ```bash
    uv run python manage.py create_sample_data --customers 50 --products 30 --orders 100
    ```
