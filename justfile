@@ -155,6 +155,10 @@ stage-deploy:
     docker compose --profile stage build
     @echo "Starting staging containers..."
     docker compose --profile stage up -d --wait
+    @echo "Running migrations..."
+    docker compose --profile stage exec web python manage.py migrate
+    docker compose --profile stage exec web python manage.py create_sample_data
+    @echo ""
     @echo "Staging deployment complete!"
     @echo "Access at: http://localhost:8000"
 
