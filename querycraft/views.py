@@ -13,11 +13,6 @@ def query_form(request: HttpRequest) -> HttpResponse:
     return render(request, "querycraft/query_form.html")
 
 
-def api_client(request: HttpRequest) -> HttpResponse:
-    """Simple API client page"""
-    return render(request, "querycraft/api_client.html")
-
-
 @csrf_exempt
 @require_http_methods(["POST"])
 def process_query(request: HttpRequest) -> JsonResponse:
