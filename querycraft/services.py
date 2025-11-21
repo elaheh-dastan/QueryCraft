@@ -79,6 +79,9 @@ Database schema:
 Question: {question}
 
 Return only the SQL query, without additional explanations. Use exact table and column names.
+- querycraft_customer (for customers)
+- querycraft_product (for products)
+- querycraft_order (for orders)
 
 SQL Query:"""
         )
@@ -89,19 +92,19 @@ SQL Query:"""
     def get_schema_info(self) -> str:
         """Get database schema information"""
         schema_info = """
-querycraft_customer table:
+customers table:
 - id (INTEGER, PRIMARY KEY)
 - name (VARCHAR)
 - email (VARCHAR)
 - registration_date (DATE)
 
-querycraft_product table:
+products table:
 - id (INTEGER, PRIMARY KEY)
 - name (VARCHAR)
 - category (VARCHAR)
 - price (DECIMAL)
 
-querycraft_order table:
+orders table:
 - id (INTEGER, PRIMARY KEY)
 - customer_id (INTEGER, FOREIGN KEY to customers.id)
 - product_id (INTEGER, FOREIGN KEY to products.id)
