@@ -1,7 +1,7 @@
 <div align="center">
     <h1>QueryCraft 🔍</h1>
     <br />
-    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/elaheh-dastan/querycraft/lint.yml?style=for-the-badge&logo=github">
+    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/elaheh-dastan/querycraft/ci.yml?style=for-the-badge&logo=github">
 </div>
 
 A Django web application that converts natural language questions to SQL queries using an AI Agent

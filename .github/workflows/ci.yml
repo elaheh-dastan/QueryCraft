@@ -1,4 +1,4 @@
-name: Lint
+name: CI
 
 on:
   push:
@@ -35,3 +35,7 @@ jobs:
       - name: Run mypy
         run: |
           uv run mypy .
+
+      - name: Run tests
+        run: |
+          uv run python manage.py test
