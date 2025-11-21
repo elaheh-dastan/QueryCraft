@@ -4,6 +4,7 @@ AI Agent service for converting natural language questions to SQL using LangGrap
 
 import logging
 from typing import Any, Literal, TypedDict
+import re
 
 from django.conf import settings
 from django.db import connection
@@ -154,15 +155,6 @@ orders table:
             # Create prompt chain using LangChain
             chain = self.prompt_template | self.llm
             logger.debug("Invoking Ollama LLM for SQL generation...")
-
-            # Log the formatted prompt for debugging
-            formatted_prompt_text = self.prompt_template.format(
-                schema=schema, question=question
-            )
-            logger.debug(
-                "Formatted prompt preview (first 300 chars): %s...",
-                formatted_prompt_text[:300],
-            )
 
             # Invoke the chain
             response = chain.invoke(
@@ -328,9 +320,6 @@ orders table:
                     sql = sql.strip()[3:]
             sql = sql.strip()
             logger.debug("After removing markdown: %s", sql)
-
-        # Try to find SQL query using multiple strategies
-        import re
 
         # Strategy 1: Look for SELECT/WITH/etc with regex (case-insensitive, allows leading whitespace)
         sql_pattern = r"\b(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*?(?:;|$)"
