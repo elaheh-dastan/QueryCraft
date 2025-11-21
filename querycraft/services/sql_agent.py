@@ -308,7 +308,9 @@ orders table:
         # Extract content from markdown code blocks if present
         if "```" in sql:
             # Find content between first pair of ```
-            match = re.search(r"```(?:sql)?\s*\n?(.*?)```", sql, re.IGNORECASE | re.DOTALL)
+            match = re.search(
+                r"```(?:sql)?\s*\n?(.*?)```", sql, re.IGNORECASE | re.DOTALL
+            )
             if match:
                 sql = match.group(1).strip()
             else:
