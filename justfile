@@ -154,12 +154,7 @@ stage-deploy:
     @echo "Building staging images..."
     docker compose --profile stage build
     @echo "Starting staging containers..."
-    docker compose --profile stage up -d
-    @echo "Waiting for services to be ready..."
-    sleep 15
-    @echo "Running migrations..."
-    docker compose --profile stage exec web python manage.py migrate
-    @echo ""
+    docker compose --profile stage up -d --wait
     @echo "Staging deployment complete!"
     @echo "Access at: http://localhost:8000"
 

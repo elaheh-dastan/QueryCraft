@@ -83,7 +83,7 @@ services:
       # Django settings
       DEBUG: ${DEBUG:-1}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-dev-key-change-me}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,*}
 
       # Database connection
       DATABASE_URL: postgresql://${POSTGRES_USER:-querycraft}:${POSTGRES_PASSWORD:-querycraft_password}@db:5432/${POSTGRES_DB:-querycraft}
@@ -132,7 +132,7 @@ services:
       # Django settings (must be properly configured via .env for production)
       DEBUG: ${DEBUG:-0}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-prod-key-MUST-be-changed}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,*}
 
       # Database connection
       DATABASE_URL: postgresql://${POSTGRES_USER:-querycraft}:${POSTGRES_PASSWORD:-querycraft_password}@db:5432/${POSTGRES_DB:-querycraft}

@@ -10,7 +10,7 @@ echo "Waiting for database to be ready..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
-until python manage.py inspectdb >/dev/null 2>&1 || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+until uv run manage.py inspectdb >/dev/null 2>&1 || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
 	RETRY_COUNT=$((RETRY_COUNT + 1))
 	echo "Waiting for database... ($RETRY_COUNT/$MAX_RETRIES)"
 	sleep 2
@@ -25,13 +25,13 @@ fi
 # Run database migrations
 echo ""
 echo "Running database migrations..."
-python manage.py migrate --noinput
+uv run manage.py migrate --noinput
 
 # Collect static files (skip in dev mode if SKIP_COLLECTSTATIC is set)
 if [ -z "$SKIP_COLLECTSTATIC" ]; then
 	echo ""
 	echo "Collecting static files..."
-	python manage.py collectstatic --noinput
+	uv run manage.py collectstatic --noinput
 else
 	echo ""
 	echo "Skipping collectstatic (SKIP_COLLECTSTATIC is set)"
@@ -41,7 +41,7 @@ fi
 if [ "$SEED_DB" = "true" ]; then
 	echo ""
 	echo "Seeding database with sample data..."
-	python manage.py seed_db || echo "Seed command failed or data already exists"
+	uv run manage.py seed_db || echo "Seed command failed or data already exists"
 fi
 
 echo ""
