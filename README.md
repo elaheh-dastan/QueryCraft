@@ -33,14 +33,14 @@ The project uses Docker Compose with deployment profiles:
 - At least 8GB RAM (for Ollama model)
 - Python 3.13+ (for local development)
 
-### Option 1: Staging Deployment (Full Docker)
-
-#### Using Justfile (Recommended)
-
 ```bash
 # Download model from HuggingFace
 just model-download
 ```
+
+### Option 1: Staging Deployment (Full Docker)
+
+#### Using Justfile (Recommended)
 
 ```bash
 # Full staging deployment (build + start + migrate)
@@ -182,6 +182,7 @@ docker compose exec ollama ollama show sqlcoder-7b-2:local
    ```
 
 2. **Configure production settings in `.env`**
+
    - Set a strong `SECRET_KEY` (generate with: `python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'`)
    - Set `DEBUG=0`
    - Configure `ALLOWED_HOSTS` with your domain(s)
