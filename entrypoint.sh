@@ -27,16 +27,6 @@ echo ""
 echo "Running database migrations..."
 uv run manage.py migrate --noinput
 
-# Collect static files (skip in dev mode if SKIP_COLLECTSTATIC is set)
-if [ -z "$SKIP_COLLECTSTATIC" ]; then
-	echo ""
-	echo "Collecting static files..."
-	uv run manage.py collectstatic --noinput
-else
-	echo ""
-	echo "Skipping collectstatic (SKIP_COLLECTSTATIC is set)"
-fi
-
 # Seed database if SEED_DB environment variable is set
 if [ "$SEED_DB" = "true" ]; then
 	echo ""

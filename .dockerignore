@@ -48,8 +48,6 @@ virtualenv/
 db.sqlite3
 db.sqlite3-journal
 *.log
-staticfiles/
-media/
 local_settings.py
 
 # ==========================================

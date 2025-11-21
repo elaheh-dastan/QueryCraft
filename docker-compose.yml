@@ -74,9 +74,6 @@ services:
     volumes:
       # Mount source code for hot-reload in development
       - .:/app
-      # Persistent volumes for static/media files
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
     ports:
       - "${WEB_PORT:-8000}:8000"
     environment:
@@ -92,7 +89,6 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
 
       # Development settings
-      SKIP_COLLECTSTATIC: "true"
       SEED_DB: ${SEED_DB:-false}
     env_file:
       - .env
@@ -122,10 +118,7 @@ services:
       args:
         DEV_MODE: "false"
     container_name: querycraft_web_prod
-    volumes:
-      # Only mount persistent data (no source code)
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+    volumes: []
     ports:
       - "${WEB_PORT:-8000}:8000"
     environment:
@@ -139,9 +132,6 @@ services:
 
       # Ollama connection
       OLLAMA_BASE_URL: http://ollama:11434
-
-      # Production settings
-      SKIP_COLLECTSTATIC: "false"
     env_file:
       - .env
     depends_on:
@@ -165,9 +155,5 @@ services:
 volumes:
   postgres_data:
     name: querycraft_postgres_data
-  static_volume:
-    name: querycraft_static
-  media_volume:
-    name: querycraft_media
   ollama_data:
     name: querycraft_ollama_data
