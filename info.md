@@ -91,3 +91,7 @@ If SQL execution fails:
 3. Ask it to fix the query automatically
 
 This solves many real-world issues.
+
+
+# Known issues
+1. We return failure if the query starts with "WITH"
