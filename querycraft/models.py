@@ -62,3 +62,31 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f"Order {self.id} - {self.customer.name} - {self.product.name}"
+
+
+class Profile(models.Model):
+    """Profile model for storing profile information"""
+
+    EDUCATION_CHOICES = [
+        ("bachelor", "Bachelor"),
+        ("master", "Master"),
+        ("phd", "PhD"),
+    ]
+
+    name = models.CharField(max_length=200, verbose_name="Name")
+    cellphone = models.CharField(max_length=20, verbose_name="Cellphone")
+    skills = models.JSONField(default=list, verbose_name="Skills")
+    education = models.CharField(
+        max_length=20,
+        choices=EDUCATION_CHOICES,
+        verbose_name="Education",
+    )
+    companies = models.JSONField(default=list, verbose_name="Companies")
+
+    class Meta:
+        verbose_name = "Profile"
+        verbose_name_plural = "Profiles"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
