@@ -58,3 +58,40 @@ The parsing logic prioritizes simplicity and reliability:
 - Handles common LLM response formats (markdown code blocks, explanatory text)
 - Preserves original input if parsing fails to ensure no data loss
 - Minimal validation to avoid over-filtering valid queries
+
+
+# What if our database grows to 1000 tables
+High-Level Solution: Schema Retrieval Before SQL Generation
+
+Instead of sending all schemas:
+
+1. Embed each table & its columns once and store the embeddings.
+2. Embed the user query at runtime.
+3. Retrieve the top-K relevant tables using vector similarity search.
+4. 👉 Send only those tables’ schemas to the LLM to generate SQL.
+
+This makes your system scale from 10 → 10,000 tables easily.
+
+Accuracy increases because irrelevant schemas no longer distract the LLM.
+
+## Advanced Enhancements for Better Accuracy
+A. Use a two-stage retrieval
+
+- Retrieve relevant tables.
+- Retrieve relevant columns inside those tables.
+
+This reduces prompt size even further.
+
+B. Automatic failed-query fallback
+
+If SQL execution fails:
+
+1. Capture the SQL error
+2. Provide error + schema + failed SQL back to the LLM
+3. Ask it to fix the query automatically
+
+This solves many real-world issues.
+
+
+# Known issues
+1. We return failure if the query starts with "WITH"
