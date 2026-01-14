@@ -4,26 +4,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('querycraft', '0001_initial'),
+        ("querycraft", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Profile',
+            name="Profile",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200, verbose_name='Name')),
-                ('cellphone', models.CharField(max_length=20, verbose_name='Cellphone')),
-                ('skills', models.JSONField(default=list, verbose_name='Skills')),
-                ('education', models.CharField(choices=[('bachelor', 'Bachelor'), ('master', 'Master'), ('phd', 'PhD')], max_length=20, verbose_name='Education')),
-                ('companies', models.JSONField(default=list, verbose_name='Companies')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=200, verbose_name="Name")),
+                (
+                    "cellphone",
+                    models.CharField(max_length=20, verbose_name="Cellphone"),
+                ),
+                ("skills", models.JSONField(default=list, verbose_name="Skills")),
+                (
+                    "education",
+                    models.CharField(
+                        choices=[
+                            ("bachelor", "Bachelor"),
+                            ("master", "Master"),
+                            ("phd", "PhD"),
+                        ],
+                        max_length=20,
+                        verbose_name="Education",
+                    ),
+                ),
+                ("companies", models.JSONField(default=list, verbose_name="Companies")),
             ],
             options={
-                'verbose_name': 'Profile',
-                'verbose_name_plural': 'Profiles',
-                'ordering': ['name'],
+                "verbose_name": "Profile",
+                "verbose_name_plural": "Profiles",
+                "ordering": ["name"],
             },
         ),
     ]

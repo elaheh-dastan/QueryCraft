@@ -73,9 +73,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("⚠ No PDF files found in directory"))
             return
 
-        self.stdout.write(
-            self.style.SUCCESS(f"✓ Found {len(pdf_texts)} PDF file(s)")
-        )
+        self.stdout.write(self.style.SUCCESS(f"✓ Found {len(pdf_texts)} PDF file(s)"))
         self.stdout.write("")
 
         # Extract profiles
@@ -117,13 +115,19 @@ class Command(BaseCommand):
                 if dry_run:
                     # Display extracted information
                     self.stdout.write(
-                        self.style.SUCCESS(f"  ✓ Extracted profile: {profile_data.name}")
+                        self.style.SUCCESS(
+                            f"  ✓ Extracted profile: {profile_data.name}"
+                        )
                     )
                     self.stdout.write(f"    Name: {profile_data.name}")
                     self.stdout.write(f"    Cellphone: {profile_data.cellphone}")
                     self.stdout.write(f"    Education: {profile_data.education}")
-                    self.stdout.write(f"    Skills ({len(profile_data.skills)}): {', '.join(profile_data.skills[:5])}{'...' if len(profile_data.skills) > 5 else ''}")
-                    self.stdout.write(f"    Companies ({len(profile_data.companies)}): {', '.join(profile_data.companies[:5])}{'...' if len(profile_data.companies) > 5 else ''}")
+                    self.stdout.write(
+                        f"    Skills ({len(profile_data.skills)}): {', '.join(profile_data.skills[:5])}{'...' if len(profile_data.skills) > 5 else ''}"
+                    )
+                    self.stdout.write(
+                        f"    Companies ({len(profile_data.companies)}): {', '.join(profile_data.companies[:5])}{'...' if len(profile_data.companies) > 5 else ''}"
+                    )
                     success_count += 1
                 else:
                     # Create profile in database
@@ -158,4 +162,3 @@ class Command(BaseCommand):
         if error_count > 0:
             self.stdout.write(self.style.ERROR(f"✗ Errors: {error_count}"))
         self.stdout.write("=" * 80)
-

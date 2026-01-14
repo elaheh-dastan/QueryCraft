@@ -46,7 +46,9 @@ class ResumeParser:
                     page_text = page.extract_text()
                     if page_text:
                         text_parts.append(page_text)
-                        logger.debug(f"Extracted {len(page_text)} characters from page {page_num}")
+                        logger.debug(
+                            f"Extracted {len(page_text)} characters from page {page_num}"
+                        )
 
             full_text = "\n\n".join(text_parts)
             logger.info(f"Successfully extracted {len(full_text)} characters from PDF")
@@ -92,4 +94,3 @@ class ResumeParser:
                 results[pdf_file.name] = ""  # Store empty string for failed files
 
         return results
-

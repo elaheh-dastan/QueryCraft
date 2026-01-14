@@ -4,7 +4,6 @@ Service for extracting profile information from resume text using LLM
 
 import json
 import logging
-from typing import Any
 
 from django.conf import settings
 from langchain_core.prompts import PromptTemplate
@@ -23,7 +22,9 @@ class ProfileData(BaseModel):
     cellphone: str = Field(description="Phone number")
     skills: list[str] = Field(default_factory=list, description="List of skills")
     education: str = Field(description="Education level: bachelor, master, or phd")
-    companies: list[str] = Field(default_factory=list, description="List of companies worked for")
+    companies: list[str] = Field(
+        default_factory=list, description="List of companies worked for"
+    )
 
     @field_validator("education")
     @classmethod
@@ -32,11 +33,27 @@ class ProfileData(BaseModel):
         v_lower = v.lower().strip()
         valid_choices = ["bachelor", "master", "phd"]
         # Try to match common variations
-        if "bachelor" in v_lower or "bachelor's" in v_lower or "bs" in v_lower or "ba" in v_lower:
+        if (
+            "bachelor" in v_lower
+            or "bachelor's" in v_lower
+            or "bs" in v_lower
+            or "ba" in v_lower
+        ):
             return "bachelor"
-        elif "master" in v_lower or "master's" in v_lower or "ms" in v_lower or "ma" in v_lower or "mba" in v_lower:
+        elif (
+            "master" in v_lower
+            or "master's" in v_lower
+            or "ms" in v_lower
+            or "ma" in v_lower
+            or "mba" in v_lower
+        ):
             return "master"
-        elif "phd" in v_lower or "ph.d" in v_lower or "doctorate" in v_lower or "doctoral" in v_lower:
+        elif (
+            "phd" in v_lower
+            or "ph.d" in v_lower
+            or "doctorate" in v_lower
+            or "doctoral" in v_lower
+        ):
             return "phd"
         elif v_lower in valid_choices:
             return v_lower
@@ -80,17 +97,17 @@ JSON:"""
 
         logger.info("ProfileExtractor initialized successfully")
 
-#     def get_profile_schema_info(self) -> str:
-#         """Get Profile model schema information for the prompt"""
-#         schema_info = """
-# Profile table schema:
-# - name (VARCHAR): Full name of the person
-# - cellphone (VARCHAR): Phone number
-# - skills (JSON array of strings): List of technical and professional skills
-# - education (VARCHAR): Education level - must be one of: "bachelor", "master", or "phd"
-# - companies (JSON array of strings): List of company names where the person has worked
-# """
-#         return schema_info
+    #     def get_profile_schema_info(self) -> str:
+    #         """Get Profile model schema information for the prompt"""
+    #         schema_info = """
+    # Profile table schema:
+    # - name (VARCHAR): Full name of the person
+    # - cellphone (VARCHAR): Phone number
+    # - skills (JSON array of strings): List of technical and professional skills
+    # - education (VARCHAR): Education level - must be one of: "bachelor", "master", or "phd"
+    # - companies (JSON array of strings): List of company names where the person has worked
+    # """
+    #         return schema_info
 
     def get_profile_schema_info(self) -> str:
         """Get Profile model schema information for the prompt"""
@@ -126,9 +143,15 @@ Profile table schema:
 
             # Log response details
             logger.debug("Ollama response type: %s", type(response))
-            response_text = response.strip() if isinstance(response, str) else str(response).strip()
+            response_text = (
+                response.strip() if isinstance(response, str) else str(response).strip()
+            )
 
-            logger.debug("Raw LLM response (length=%d): '%s'", len(response_text), response_text[:200])
+            logger.debug(
+                "Raw LLM response (length=%d): '%s'",
+                len(response_text),
+                response_text[:200],
+            )
 
             # Parse JSON response
             # Try to extract JSON from markdown code blocks if present
@@ -136,7 +159,11 @@ Profile table schema:
                 # Extract content between code blocks
                 import re
 
-                match = re.search(r"```(?:json)?\s*\n?(.*?)```", response_text, re.IGNORECASE | re.DOTALL)
+                match = re.search(
+                    r"```(?:json)?\s*\n?(.*?)```",
+                    response_text,
+                    re.IGNORECASE | re.DOTALL,
+                )
                 if match:
                     response_text = match.group(1).strip()
 
@@ -188,4 +215,3 @@ Profile table schema:
 
         logger.info(f"Successfully created Profile: {profile.name} (ID: {profile.id})")
         return profile
-
